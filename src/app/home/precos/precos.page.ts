@@ -217,8 +217,7 @@ export class PrecosPage implements OnInit {
       )
       .pipe(timeout(30000))
       .subscribe({
-        next: (data) => {
-          this.alert.presentToast(data.message, 5000);
+        next: () => {
           this.finalizarEnvio();
         },
         error: (err) => {

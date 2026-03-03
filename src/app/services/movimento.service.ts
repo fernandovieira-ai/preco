@@ -77,6 +77,19 @@ export class MovimentoService {
     );
   }
 
+  buscaItensPrecoAtualizacao(schema, cod_empresa): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = { schema, cod_empresa };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/buscaItensPrecoAtualizacao`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
   buscaFiltroPreLoad(schema): Observable<any> {
     const token = window.localStorage.getItem("token");
     const body = { schema };
@@ -144,6 +157,47 @@ export class MovimentoService {
           }),
         )
     );
+  }
+
+  buscaSubgruposPista(schema, cod_empresa_sel): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = { schema, modulo: "pista", cod_empresa_sel };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/buscaSubgruposPista`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  atualizarCustosPrecoPista(schema, cod_empresa_sel): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = { schema, cod_empresa_sel };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/atualizarCustosPrecoPista`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          console.error("Erro ao atualizar custos e preços:", err);
+          throw err;
+        }),
+      );
   }
 
   buscaPrecosCliente(schema, cod_empresa, cliente): Observable<any> {
@@ -685,5 +739,66 @@ export class MovimentoService {
           }),
         )
     );
+  }
+
+  buscaPrecoEmsys(
+    schema: string,
+    codEmpresa: number[],
+    codItem: number[],
+    codPessoa: number[],
+    codFormaPagto: number[],
+    tipoNegociacao: string,
+    precoMenorQue: number = 0,
+  ): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = {
+      schema,
+      codEmpresa,
+      codItem,
+      codPessoa,
+      codFormaPagto,
+      tipoNegociacao,
+      precoMenorQue,
+    };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+
+    return this.httpClient
+      .post<any>(`${this.baseURL}/buscaPrecoEmsys`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  atualizarPrecosEmsys(schema: string, precos: any[]): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = {
+      schema,
+      precos,
+    };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+
+    return this.httpClient
+      .post<any>(`${this.baseURL}/atualizarPrecosEmsys`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
   }
 }

@@ -23,8 +23,6 @@ const PDFDocument = require("pdfkit");
 exports.fazerLogin = async (req, res) => {
   const { nom_usuario, senha } = req.body;
 
-  console.log(req.body);
-
   const user = await db.query_trocaprecos(
     `
     SELECT
@@ -168,23 +166,11 @@ exports.novoUsuario = async (req, res) => {
 
 exports.sincronizaCadastros = async (req, res) => {
   const { schema_base, param1, param2, param3, param4 } = req.body;
-
-  console.log("Backend recebeu requisição sincronizaCadastros:", {
-    schema_base,
-    param1,
-    param2,
-    param3,
-    param4,
-  });
-
   try {
     await db.query_trocaprecos("BEGIN");
 
     // Chama a procedure correta: sp_atualiza_cadastro com os 4 parâmetros
     const query = `SELECT ${schema_base}.sp_atualiza_cadastro($1, $2, $3, $4) as resultado`;
-    console.log("Executando query:", query);
-    console.log("Com parâmetros:", [param1, param2, param3, param4]);
-
     const resultadoSP = await db.query_trocaprecos(query, [
       param1,
       param2,
@@ -197,9 +183,6 @@ exports.sincronizaCadastros = async (req, res) => {
     // Retorna o resultado da procedure
     const mensagemRetorno =
       resultadoSP.rows[0]?.resultado || "Sincronização concluída";
-
-    console.log("Resultado da procedure:", mensagemRetorno);
-
     res.status(200).json({
       message: "Dados foram baixados com sucesso",
       detalhe: mensagemRetorno,
@@ -216,26 +199,17 @@ exports.sincronizaCadastros = async (req, res) => {
 
 exports.atualizaUsuarios = async (req, res) => {
   const { schema_base } = req.body;
-
-  console.log("Backend - atualizaUsuarios - Schema:", schema_base);
-
   try {
     await db.query_trocaprecos("BEGIN");
 
     // Chama a procedure sp_atualiza_usuario
     const query = `SELECT ${schema_base}.sp_atualiza_usuario($1) as resultado`;
-    console.log("Executando query:", query);
-    console.log("Com parâmetro:", schema_base);
-
     const resultadoSP = await db.query_trocaprecos(query, [schema_base]);
 
     await db.query_trocaprecos("COMMIT");
 
     const mensagemRetorno =
       resultadoSP.rows[0]?.resultado || "Usuários atualizados";
-
-    console.log("Resultado da procedure sp_atualiza_usuario:", mensagemRetorno);
-
     res.status(200).json({
       message: "Usuários atualizados com sucesso",
       detalhe: mensagemRetorno,
@@ -248,6 +222,38 @@ exports.atualizaUsuarios = async (req, res) => {
       message: "Falha ao atualizar usuários: " + error.message,
     });
   }
+};
+
+exports.atualizarCadastroClientes = async (req, res) => {
+  const { schema } = req.body;
+  // Não espera pela conclusão, executa em background
+  // Isso permite que o login não seja bloqueado
+  setImmediate(async () => {
+    try {
+      await db.query_trocaprecos("BEGIN");
+
+      // Chama a procedure sp_cadastro_cliente
+      const query = `SELECT ${schema}.sp_cadastro_cliente($1) as resultado`;
+      const resultadoSP = await db.query_trocaprecos(query, [schema]);
+
+      await db.query_trocaprecos("COMMIT");
+
+      const mensagemRetorno =
+        resultadoSP.rows[0]?.resultado || "Cadastro de clientes atualizado";
+    } catch (error) {
+      console.error(
+        "Erro ao executar sp_cadastro_cliente (background):",
+        error,
+      );
+      await db.query_trocaprecos("ROLLBACK");
+    }
+  });
+
+  // Retorna imediatamente para não bloquear o login
+  res.status(200).json({
+    message: "Atualização de cadastro iniciada em background",
+    status: "processando",
+  });
 };
 
 exports.removeUsuario = async (req, res) => {
@@ -359,8 +365,32 @@ exports.buscaEmpresasBase = async (req, res) => {
   try {
     await db.query_trocaprecos("BEGIN");
 
+    // Extrair códigos de empresa do array de objetos ou array de IDs
+    let empresaIds = [];
+    if (Array.isArray(empresa)) {
+      // Se for array de objetos {cod_empresa: X}
+      if (empresa.length > 0 && typeof empresa[0] === "object") {
+        empresaIds = empresa.map((e) => e.cod_empresa);
+      } else {
+        // Se for array de números
+        empresaIds = empresa;
+      }
+    }
+
+    // Se não houver empresas, retornar vazio
+    if (empresaIds.length === 0) {
+      await db.query_trocaprecos("COMMIT");
+      return res.status(200).json({
+        message: [],
+      });
+    }
+
     const empresas = await db.query_trocaprecos(
-      `select cod_empresa, nom_fantasia, false as ind_selecionado from ${schema}.tab_empresa_schema where cod_empresa in (${empresa}) order by cod_empresa`,
+      `select cod_empresa, nom_fantasia, false as ind_selecionado 
+       from ${schema}.tab_empresa_schema 
+       where cod_empresa = ANY($1::INTEGER[]) 
+       order by cod_empresa`,
+      [empresaIds],
     );
 
     await db.query_trocaprecos("COMMIT");
@@ -370,8 +400,9 @@ exports.buscaEmpresasBase = async (req, res) => {
     });
   } catch (error) {
     await db.query_trocaprecos("ROLLBACK");
+    console.error("Erro em buscaEmpresasBase:", error);
     res.status(500).json({
-      message: "Falha em obter empresas:" + error,
+      message: "Falha em obter empresas: " + error.message,
     });
   }
 };
@@ -466,19 +497,16 @@ exports.buscaFiltroPreLoad = async (req, res) => {
 
 exports.buscaFiltro = async (req, res) => {
   const { schema, cod_empresa } = req.body;
-
-  console.log(cod_empresa);
-
   try {
     await db.query_trocaprecos("BEGIN");
 
     //const pessoa = await db.query_trocaprecos(`select cod_pessoa, nom_pessoa, coalesce(num_cnpj_cpf, '') as num_cnpj_cpf , cod_regiao_venda, false as ind_selecionado from ${schema}.tab_pessoa`);
     //const regiao = await db.query_trocaprecos(`select cod_regiao_venda, des_regiao_venda, false as ind_selecionado from ${schema}.tab_regiao_venda`);
     const item = await db.query_trocaprecos(`select distinct
-                                  a.cod_item, 
-                                  a.des_item, 
-                                  a.cod_barra, 
-                                  a.cod_subgrupo, 
+                                  a.cod_item,
+                                  a.des_item,
+                                  a.cod_barra,
+                                  a.cod_subgrupo,
                                   false as ind_selecionado,
                                   b.val_preco_venda,
                                   b.val_custo_medio,
@@ -486,9 +514,9 @@ exports.buscaFiltro = async (req, res) => {
                                   d.nom_fantasia
                                   from ${schema}.tab_item a
                                   inner join ${schema}.tab_custo_preco b on (a.cod_item = b.cod_item)
-                                  inner join ${schema}.tab_item_empresa c on (c.cod_item = a.cod_item and c.cod_empresa = b.cod_empresa) 
-                                  inner join ${schema}.tab_empresa_schema d on (c.cod_empresa = d.cod_empresa) 
-                                  where cod_subgrupo in (1, 43, 47) 
+                                  inner join ${schema}.tab_item_empresa c on (c.cod_item = a.cod_item and c.cod_empresa = b.cod_empresa)
+                                  inner join ${schema}.tab_empresa_schema d on (c.cod_empresa = d.cod_empresa)
+                                  where cod_subgrupo in (1, 43, 47)
                                   and b.cod_empresa in (${cod_empresa})
                                   order by cod_item`);
     //const subGrupo = await db.query_trocaprecos(`select distinct cod_subgrupo, des_subgrupo from ${schema}.tab_item`);
@@ -537,13 +565,66 @@ exports.buscaFiltro = async (req, res) => {
   }
 };
 
-exports.buscaItemBomba = async (req, res) => {
+exports.buscaItensPrecoAtualizacao = async (req, res) => {
   const { schema, cod_empresa } = req.body;
+  try {
+    const item = await db.query_trocaprecos(`select distinct
+                                  a.cod_item,
+                                  a.des_item,
+                                  a.cod_barra,
+                                  a.cod_subgrupo,
+                                  false as ind_selecionado
+                                  from ${schema}.tab_item a
+                                  where exists (
+                                    select 1
+                                    from ${schema}.tab_item_empresa aa
+                                    where aa.cod_empresa in (${cod_empresa})
+                                    and aa.cod_item = a.cod_item
+                                  )
+                                  order by a.cod_item`);
+
+    const formaPagto = await db.query_trocaprecos(
+      `select distinct cod_forma_pagto, des_forma_pagto, false as ind_selecionado, ind_tipo, false as ind_selecionado_todos from ${schema}.tab_forma_pagto where cod_empresa in (${cod_empresa}) order by cod_forma_pagto`,
+    );
+
+    res.status(200).json({
+      item: item.rows,
+      formaPagto: formaPagto.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Falha em obter dados, tente novamente:" + error,
+    });
+  }
+};
+
+exports.buscaItemBomba = async (req, res) => {
+  const { schema } = req.body;
+  let { cod_empresa } = req.body;
+
+  // Garantir que cod_empresa seja um array de números
+  let empresasSelecionadas = [];
+  if (cod_empresa) {
+    if (Array.isArray(cod_empresa)) {
+      empresasSelecionadas = cod_empresa.map((e) => parseInt(e, 10));
+    } else {
+      empresasSelecionadas = [parseInt(cod_empresa, 10)];
+    }
+  }
 
   try {
     await db.query_trocaprecos("BEGIN");
 
-    const item = await db.query_trocaprecos(`select distinct
+    console.log("[buscaItemBomba] Schema:", schema);
+    console.log("[buscaItemBomba] Empresas:", empresasSelecionadas);
+
+    // Criar placeholders parametrizados para as empresas
+    const placeholders = empresasSelecionadas
+      .map((_, i) => `$${i + 1}`)
+      .join(",");
+
+    const item = await db.query_trocaprecos(
+      `select distinct
                                         a.cod_item, 
                                         a.des_item, 
                                         a.cod_barra, 
@@ -559,8 +640,12 @@ exports.buscaItemBomba = async (req, res) => {
                                         inner join ${schema}.tab_item_empresa c on (c.cod_item = a.cod_item and c.cod_empresa = b.cod_empresa) 
                                         inner join ${schema}.tab_empresa_schema d on (c.cod_empresa = d.cod_empresa) 
                                         where cod_subgrupo in (1) 
-                                        and b.cod_empresa in (${cod_empresa})
-                                        order by cod_item`);
+                                        and b.cod_empresa in (${placeholders})
+                                        order by cod_item`,
+      empresasSelecionadas,
+    );
+
+    console.log("[buscaItemBomba] Itens encontrados:", item.rows.length);
 
     await db.query_trocaprecos("COMMIT");
 
@@ -569,6 +654,7 @@ exports.buscaItemBomba = async (req, res) => {
     });
   } catch (error) {
     await db.query_trocaprecos("ROLLBACK");
+    console.error("[buscaItemBomba] ERRO:", error);
     res.status(500).json({
       message: "Falha em obter itens:" + error,
     });
@@ -576,12 +662,32 @@ exports.buscaItemBomba = async (req, res) => {
 };
 
 exports.buscaFiltroItem = async (req, res) => {
-  const { schema, cod_empresa } = req.body;
+  const { schema } = req.body;
+  let { cod_empresa } = req.body;
+
+  // Garantir que cod_empresa seja um array de números
+  let empresasSelecionadas = [];
+  if (cod_empresa) {
+    if (Array.isArray(cod_empresa)) {
+      empresasSelecionadas = cod_empresa.map((e) => parseInt(e, 10));
+    } else {
+      empresasSelecionadas = [parseInt(cod_empresa, 10)];
+    }
+  }
 
   try {
     await db.query_trocaprecos("BEGIN");
 
-    const item = await db.query_trocaprecos(`select distinct
+    console.log("[buscaFiltroItem] Schema:", schema);
+    console.log("[buscaFiltroItem] Empresas:", empresasSelecionadas);
+
+    // Criar placeholders parametrizados para as empresas
+    const placeholders = empresasSelecionadas
+      .map((_, i) => `$${i + 1}`)
+      .join(",");
+
+    const item = await db.query_trocaprecos(
+      `select distinct
                                   a.cod_item, 
                                   a.des_item, 
                                   a.cod_barra, 
@@ -596,23 +702,30 @@ exports.buscaFiltroItem = async (req, res) => {
                                   inner join ${schema}.tab_item_empresa c on (c.cod_item = a.cod_item and c.cod_empresa = b.cod_empresa) 
                                   inner join ${schema}.tab_empresa_schema d on (c.cod_empresa = d.cod_empresa) 
                                   where cod_subgrupo in (1) 
-                                  and b.cod_empresa in (${cod_empresa})
-                                  order by cod_item`);
-
-    //const pessoa = await db.query_trocaprecos(`select cod_pessoa, nom_pessoa, coalesce(num_cnpj_cpf, '') as num_cnpj_cpf , cod_regiao_venda, false as ind_selecionado from ${schema}.tab_pessoa`);
-    const formaPagto = await db.query_trocaprecos(
-      `select distinct cod_forma_pagto, des_forma_pagto, false as ind_selecionado, ind_tipo from ${schema}.tab_forma_pagto where cod_empresa in (${cod_empresa}) order by cod_forma_pagto`,
+                                  and b.cod_empresa in (${placeholders})
+                                  order by cod_item`,
+      empresasSelecionadas,
     );
-    const itemFull = await db.query_trocaprecos(`select a.cod_item, a.des_item 
+
+    const formaPagto = await db.query_trocaprecos(
+      `select distinct cod_forma_pagto, des_forma_pagto, false as ind_selecionado, ind_tipo from ${schema}.tab_forma_pagto where cod_empresa in (${placeholders}) order by cod_forma_pagto`,
+      empresasSelecionadas,
+    );
+
+    const itemFull = await db.query_trocaprecos(
+      `select a.cod_item, a.des_item 
                                       from ${schema}.tab_item a
                                       inner join ${schema}.tab_custo_preco b on (a.cod_item = b.cod_item)
                                       inner join ${schema}.tab_item_empresa c on (c.cod_item = a.cod_item and c.cod_empresa = b.cod_empresa) 
                                       where a.cod_subgrupo in (1) 
-                                      and b.cod_empresa in (${cod_empresa})
+                                      and b.cod_empresa in (${placeholders})
                                       group by a.cod_item, a.des_item 
-                                      order by a.cod_item`);
+                                      order by a.cod_item`,
+      empresasSelecionadas,
+    );
 
-    const tipoFormaPagto = await db.query_trocaprecos(`select ind_tipo,
+    const tipoFormaPagto = await db.query_trocaprecos(
+      `select ind_tipo,
                                       CASE ind_tipo
                                         WHEN 'CC' THEN 'Cartao Credito'
                                         WHEN 'CD' THEN 'Cartao Debito'
@@ -626,7 +739,12 @@ exports.buscaFiltroItem = async (req, res) => {
                                         WHEN 'CT' THEN 'CTF'
                                         WHEN 'CP' THEN 'Cheque Pre'
                                         ELSE ind_tipo
-                                      END AS des_forma_pagto from ${schema}.tab_forma_pagto where cod_empresa in (${cod_empresa}) group by 1`);
+                                      END AS des_forma_pagto from ${schema}.tab_forma_pagto where cod_empresa in (${placeholders}) group by 1`,
+      empresasSelecionadas,
+    );
+
+    console.log("[buscaFiltroItem] Itens:", item.rows.length);
+    console.log("[buscaFiltroItem] Formas pagto:", formaPagto.rows.length);
 
     await db.query_trocaprecos("COMMIT");
     res.status(200).json({
@@ -638,8 +756,215 @@ exports.buscaFiltroItem = async (req, res) => {
     });
   } catch (error) {
     await db.query_trocaprecos("ROLLBACK");
+    console.error("[buscaFiltroItem] ERRO:", error);
     res.status(500).json({
       message: "Falha em obter tipos de depesas:" + error,
+    });
+  }
+};
+
+exports.buscaSubgruposPista = async (req, res) => {
+  const { schema, modulo } = req.body;
+  let { cod_empresa_sel } = req.body;
+
+  // Garantir que cod_empresa_sel é um array de números inteiros
+  let empresasSelecionadas = [];
+  if (cod_empresa_sel) {
+    if (Array.isArray(cod_empresa_sel)) {
+      empresasSelecionadas = cod_empresa_sel.map((e) => parseInt(e, 10));
+    } else {
+      empresasSelecionadas = [parseInt(cod_empresa_sel, 10)];
+    }
+  }
+
+  try {
+    await db.query_trocaprecos("BEGIN");
+
+    console.log(
+      `[buscaSubgruposPista] Iniciando - Schema: ${schema}, Empresas: ${empresasSelecionadas.join(", ")}`,
+    );
+
+    // Buscar empresas selecionadas
+    let empresas;
+    if (empresasSelecionadas.length > 0) {
+      const placeholders = empresasSelecionadas
+        .map((_, i) => `$${i + 1}`)
+        .join(",");
+      empresas = await db.query_trocaprecos(
+        `
+        SELECT DISTINCT
+          e.cod_empresa,
+          e.nom_fantasia
+        FROM ${schema}.tab_empresa_schema e
+        INNER JOIN ${schema}.tab_item_empresa ie ON e.cod_empresa = ie.cod_empresa
+        WHERE e.cod_empresa IN (${placeholders})
+        ORDER BY e.cod_empresa
+      `,
+        empresasSelecionadas,
+      );
+    } else {
+      empresas = await db.query_trocaprecos(`
+        SELECT DISTINCT
+          e.cod_empresa,
+          e.nom_fantasia
+        FROM ${schema}.tab_empresa_schema e
+        INNER JOIN ${schema}.tab_item_empresa ie ON e.cod_empresa = ie.cod_empresa
+        ORDER BY e.cod_empresa
+      `);
+    }
+    // Para cada empresa, buscar subgrupos e itens usando a query otimizada
+    const empresasComItens = [];
+
+    for (const empresa of empresas.rows) {
+      try {
+        // Query otimizada: JOIN direto entre tab_subgrupo_item, tab_item e tab_item_empresa
+        // Filtra apenas itens que possuem preço cadastrado na empresa selecionada
+        const itensEmpresa = await db.query_trocaprecos(
+          `
+          SELECT 
+            b.cod_subgrupo,
+            b.des_subgrupo,
+            b.cod_item,
+            b.des_item,
+            b.cod_barra,
+            cp.val_preco_venda,
+            cp.val_custo_medio
+          FROM zmaisz.tab_subgrupo_item a 
+          INNER JOIN ${schema}.tab_item b ON (a.cod_subgrupo_item = b.cod_subgrupo) 
+          INNER JOIN ${schema}.tab_item_empresa c ON (c.cod_item = b.cod_item)
+          LEFT JOIN ${schema}.tab_custo_preco cp ON (cp.cod_item = b.cod_item AND cp.cod_empresa = c.cod_empresa)
+          WHERE c.cod_empresa = $1
+            AND LOWER(a.des_modulo) = LOWER($2)
+            AND EXISTS (
+              SELECT 1 FROM ${schema}.tab_custo_preco aa
+              WHERE aa.cod_item = b.cod_item
+              AND aa.cod_empresa = $1
+            )
+          ORDER BY b.des_subgrupo, b.des_item
+        `,
+          [empresa.cod_empresa, modulo || "pista"],
+        );
+        // Log dos primeiros itens para debug
+        if (itensEmpresa.rows.length > 0) {
+          console.log(
+            `[buscaSubgruposPista] Primeiros 3 itens:`,
+            itensEmpresa.rows.slice(0, 3).map((i) => ({
+              cod_item: i.cod_item,
+              des_item: i.des_item,
+              cod_subgrupo: i.cod_subgrupo,
+              des_subgrupo: i.des_subgrupo,
+            })),
+          );
+        }
+
+        // Agrupar itens por subgrupo
+        const subgruposMap = new Map();
+
+        itensEmpresa.rows.forEach((item) => {
+          const subgrupoKey = `${item.cod_subgrupo}_${item.des_subgrupo}`;
+
+          if (!subgruposMap.has(subgrupoKey)) {
+            subgruposMap.set(subgrupoKey, {
+              cod_subgrupo: item.cod_subgrupo,
+              des_subgrupo:
+                item.des_subgrupo || `Subgrupo ${item.cod_subgrupo}`,
+              itens: [],
+            });
+          }
+
+          subgruposMap.get(subgrupoKey).itens.push({
+            cod_item: item.cod_item,
+            des_item: item.des_item,
+            cod_barra: item.cod_barra,
+            val_preco_venda: item.val_preco_venda,
+            val_custo_medio: item.val_custo_medio,
+            ind_selecionado: false,
+          });
+        });
+
+        const subgruposArray = Array.from(subgruposMap.values());
+
+        const totalItens = subgruposArray.reduce(
+          (total, s) => total + (s.itens ? s.itens.length : 0),
+          0,
+        );
+        if (subgruposArray.length === 0) {
+        }
+
+        if (subgruposArray.length > 0) {
+          empresasComItens.push({
+            cod_empresa: empresa.cod_empresa,
+            nom_fantasia: empresa.nom_fantasia,
+            subgrupos: subgruposArray,
+          });
+        }
+      } catch (empresaError) {
+        console.error(
+          `[buscaSubgruposPista] Erro ao processar empresa ${empresa.nom_fantasia}:`,
+          empresaError.message,
+        );
+        // Continua para próxima empresa
+      }
+    }
+    await db.query_trocaprecos("COMMIT");
+
+    res.status(200).json({
+      empresas: empresasComItens,
+      message: `${empresasComItens.length} empresa(s) com produtos pista encontradas`,
+    });
+  } catch (error) {
+    await db.query_trocaprecos("ROLLBACK");
+    console.error("[buscaSubgruposPista] ERRO:", error);
+    console.error("[buscaSubgruposPista] Stack:", error.stack);
+    res.status(500).json({
+      message: "Falha ao buscar subgrupos pista: " + error.message,
+      error: error.message,
+      stack: error.stack,
+    });
+  }
+};
+
+exports.atualizarCustosPrecoPista = async (req, res) => {
+  const { schema, cod_empresa_sel } = req.body;
+
+  try {
+    // Retorna imediatamente para não bloquear a UI
+    res.status(200).json({
+      message: "Atualização de custos/preços iniciada em background",
+      empresas: cod_empresa_sel.length,
+    });
+
+    // Executa a atualização em background
+    setImmediate(async () => {
+      try {
+        const startTime = Date.now();
+
+        // Para cada empresa, executa o procedimento para todos os itens
+        for (const empresa of cod_empresa_sel) {
+          // Executa o procedimento para atualizar custos/preços
+          const query = `
+            SELECT ${schema}.sp_custo_preco(${empresa}, a.cod_item, 0) 
+            FROM ${schema}.tab_item a
+          `;
+
+          await db.query_trocaprecos(query);
+        }
+
+        const endTime = Date.now();
+        const duration = ((endTime - startTime) / 1000).toFixed(2);
+      } catch (bgError) {
+        console.error(
+          "[atualizarCustosPrecoPista] Erro no processamento background:",
+          bgError,
+        );
+      }
+    });
+  } catch (error) {
+    console.error("[atualizarCustosPrecoPista] ERRO:", error);
+    res.status(500).json({
+      message:
+        "Falha ao iniciar atualização de custos/preços: " + error.message,
+      error: error.message,
     });
   }
 };
@@ -810,7 +1135,6 @@ async function novaNegociacaoInsert(
 }
 
 async function geraStatus(lote, total, progresso, error, empresa, schema) {
-  console.log(lote, total, progresso, error, empresa, schema);
   try {
     await db.query_trocaprecos("BEGIN");
 
@@ -845,8 +1169,6 @@ async function geraStatus(lote, total, progresso, error, empresa, schema) {
 
 exports.buscaMinhasNegociacoes = async (req, res) => {
   const { schema, cod_usuario, cod_empresa } = req.body;
-  console.log(cod_empresa);
-
   try {
     await db.query_trocaprecos("BEGIN");
 
@@ -1275,9 +1597,6 @@ exports.enviaTrocaPreco = async (req, res) => {
 
 exports.aprovaRegra = async (req, res) => {
   const { schema, cod_empresa, nom_usuario, seq_lote } = req.body;
-
-  console.log(req.body);
-
   try {
     await db.query_trocaprecos("BEGIN");
 
@@ -1312,9 +1631,6 @@ exports.aprovaRegra = async (req, res) => {
 
 exports.reprovaRegra = async (req, res) => {
   const { schema, seq_lote } = req.body;
-
-  console.log(req.body);
-
   try {
     await db.query_trocaprecos("BEGIN");
 
@@ -1392,6 +1708,262 @@ exports.buscaPrecoIntervalo = async (req, res) => {
     await db.query_trocaprecos("ROLLBACK");
     res.status(500).json({
       message: "Falha em aplicar negociações:" + error,
+    });
+  }
+};
+
+//=> Método responsável por buscar preços na tab_preco_emsys
+exports.buscaPrecoEmsys = async (req, res) => {
+  const {
+    schema,
+    codEmpresa,
+    codItem,
+    codPessoa,
+    codFormaPagto,
+    tipoNegociacao,
+    precoMenorQue,
+  } = req.body;
+
+  console.log("=== buscaPrecoEmsys - Parâmetros recebidos ===");
+  console.log("Schema:", schema);
+  console.log("Empresas:", codEmpresa);
+  console.log("Items:", codItem);
+  console.log("Clientes:", codPessoa);
+  console.log("Formas Pagto:", codFormaPagto);
+  console.log(
+    "Tipo Negociação:",
+    tipoNegociacao,
+    "| Tipo:",
+    typeof tipoNegociacao,
+    "| Length:",
+    tipoNegociacao?.length,
+  );
+  console.log("Preço Menor Que:", precoMenorQue);
+
+  // Validar se pelo menos uma empresa foi selecionada
+  if (!codEmpresa || codEmpresa.length === 0) {
+    return res.status(400).json({
+      message: "Pelo menos uma empresa deve ser selecionada.",
+    });
+  }
+
+  try {
+    // Preparar parâmetros para a procedure
+    // Se tipoNegociacao estiver vazio, envia string vazia ao invés de null
+    const tipoPreco =
+      tipoNegociacao && tipoNegociacao.trim() !== ""
+        ? tipoNegociacao.trim().toUpperCase()
+        : "";
+
+    console.log("=== PASSO 1: Chamando sp_busca_preco (popula tabela) ===");
+    console.log("Schema:", schema);
+    console.log("Empresas:", codEmpresa);
+    console.log("Items:", codItem);
+    console.log("Clientes:", codPessoa);
+    console.log("Formas Pagto:", codFormaPagto);
+    console.log("Tipo Preço:", tipoPreco);
+    console.log("Preço Menor Que:", precoMenorQue || 0);
+
+    // PASSO 1: Chamar a stored procedure que popula a tabela tab_preco_emsys
+    const queryProcedure = `SELECT ${schema}.sp_busca_preco($1, $2, $3, $4, $5, $6, $7)`;
+    const paramsProcedure = [
+      schema,
+      codEmpresa,
+      codItem,
+      codPessoa,
+      codFormaPagto,
+      tipoPreco,
+      precoMenorQue || 0,
+    ];
+
+    console.log("Query Procedure:", queryProcedure);
+    await db.query_trocaprecos(queryProcedure, paramsProcedure);
+    console.log("✓ Procedure executada com sucesso");
+
+    // PASSO 2: Buscar os dados da tabela com os JOINs
+    console.log("=== PASSO 2: Buscando dados com JOINs ===");
+
+    const querySelect = `
+      SELECT  
+        e.cod_empresa,
+        e.nom_fantasia, 
+        b.cod_pessoa,
+        b.nom_pessoa, 
+        c.cod_item,
+        c.des_item, 
+        d.cod_forma_pagto,
+        d.des_forma_pagto,
+        a.dta_inicio,
+        a.ind_tipo_negociacao,
+        a.ind_percentual_valor,
+        a.ind_tipo_preco_base,
+        a.val_preco_venda_a,
+        a.val_preco_venda_b,
+        a.val_preco_venda_c,
+        a.val_preco_venda_d,
+        a.val_preco_venda_e,
+        COALESCE(f.val_custo_medio, 0) as val_custo_medio,
+        a.cod_condicao_pagamento,
+        a.des_observacao,
+        a.num_chf,
+        a.dta_inclusao,
+        a.hra_inclusao,
+        a.nom_usuario_inclusao,
+        a.ind_diferencia_preco_unitario,
+        a.seq_preco,
+        a.ind_todas_empresas,
+        a.id_preco,
+        a.nom_usuario_replicacao,
+        a.dta_replicacao,
+        a.hra_replicacao
+      FROM ${schema}.tab_preco_emsys a 
+      INNER JOIN ${schema}.tab_pessoa b ON (a.cod_pessoa = b.cod_pessoa) 
+      INNER JOIN ${schema}.tab_item c ON (c.cod_item = a.cod_item) 
+      INNER JOIN ${schema}.tab_forma_pagto d ON (d.cod_forma_pagto = a.cod_condicao_pagamento) 
+      INNER JOIN ${schema}.tab_empresa_schema e ON (e.cod_empresa = a.cod_empresa AND d.cod_empresa = e.cod_empresa) 
+      LEFT JOIN ${schema}.tab_custo_preco f ON (f.cod_empresa = a.cod_empresa AND f.cod_item = a.cod_item)
+      ORDER BY e.nom_fantasia, b.nom_pessoa, c.des_item, d.ind_tipo, d.des_forma_pagto
+    `;
+
+    console.log("Query Select:", querySelect);
+    const result = await db.query_trocaprecos(querySelect);
+
+    console.log(`=== Resultados encontrados: ${result.rows.length} ===`);
+    if (result.rows.length > 0) {
+      console.log("Primeira linha de exemplo:", result.rows[0]);
+    } else {
+      console.log("⚠️ Nenhum resultado encontrado após os JOINs");
+    }
+
+    res.status(200).json({
+      message: result.rows,
+    });
+  } catch (error) {
+    console.error("=== ERRO em buscaPrecoEmsys ===");
+    console.error("Mensagem:", error.message);
+    console.error("Stack:", error.stack);
+    console.error("Detalhes:", error);
+    res.status(500).json({
+      message: "Falha ao buscar preços: " + error.message,
+    });
+  }
+};
+
+//=> Método responsável por atualizar preços na tab_preco_emsys
+exports.atualizarPrecosEmsys = async (req, res) => {
+  const { schema, precos } = req.body;
+
+  try {
+    await db.query_trocaprecos("BEGIN");
+
+    let updatedCount = 0;
+
+    for (const preco of precos) {
+      // Construir cláusula SET dinâmica apenas para campos que foram alterados
+      let setFields = [];
+      let params = [];
+      let paramCounter = 1;
+
+      if (
+        preco.val_novo_preco_a !== undefined &&
+        preco.val_novo_preco_a !== null
+      ) {
+        setFields.push(`val_preco_venda_a = $${paramCounter}`);
+        params.push(preco.val_novo_preco_a);
+        paramCounter++;
+      }
+
+      if (
+        preco.val_novo_preco_b !== undefined &&
+        preco.val_novo_preco_b !== null
+      ) {
+        setFields.push(`val_preco_venda_b = $${paramCounter}`);
+        params.push(preco.val_novo_preco_b);
+        paramCounter++;
+      }
+
+      if (
+        preco.val_novo_preco_c !== undefined &&
+        preco.val_novo_preco_c !== null
+      ) {
+        setFields.push(`val_preco_venda_c = $${paramCounter}`);
+        params.push(preco.val_novo_preco_c);
+        paramCounter++;
+      }
+
+      if (
+        preco.val_novo_preco_d !== undefined &&
+        preco.val_novo_preco_d !== null
+      ) {
+        setFields.push(`val_preco_venda_d = $${paramCounter}`);
+        params.push(preco.val_novo_preco_d);
+        paramCounter++;
+      }
+
+      if (
+        preco.val_novo_preco_e !== undefined &&
+        preco.val_novo_preco_e !== null
+      ) {
+        setFields.push(`val_preco_venda_e = $${paramCounter}`);
+        params.push(preco.val_novo_preco_e);
+        paramCounter++;
+      }
+
+      // Se houver alterações, fazer o UPDATE
+      if (setFields.length > 0) {
+        // Adicionar informações de replicação
+        const dataAtual = moment().format("YYYY-MM-DD");
+        const horaAtual = moment().format("HH:mm:ss");
+
+        setFields.push(`dta_replicacao = $${paramCounter}`);
+        params.push(dataAtual);
+        paramCounter++;
+
+        setFields.push(`hra_replicacao = $${paramCounter}`);
+        params.push(horaAtual);
+        paramCounter++;
+
+        setFields.push(`nom_usuario_replicacao = $${paramCounter}`);
+        params.push("Sistema Atualização"); // Pode ser alterado para incluir usuário logado
+        paramCounter++;
+
+        // Adicionar parâmetros de WHERE
+        params.push(preco.cod_empresa);
+        const codEmpresaParam = paramCounter;
+        paramCounter++;
+
+        params.push(preco.cod_item);
+        const codItemParam = paramCounter;
+        paramCounter++;
+
+        params.push(preco.dta_inicio);
+        const dtaInicioParam = paramCounter;
+        paramCounter++;
+
+        const updateQuery = `
+          UPDATE ${schema}.tab_preco_emsys
+          SET ${setFields.join(", ")}
+          WHERE cod_empresa = $${codEmpresaParam}
+            AND cod_item = $${codItemParam}
+            AND dta_inicio = $${dtaInicioParam}
+        `;
+
+        await db.query_trocaprecos(updateQuery, params);
+        updatedCount++;
+      }
+    }
+
+    await db.query_trocaprecos("COMMIT");
+
+    res.status(200).json({
+      message: `${updatedCount} preço(s) atualizado(s) com sucesso!`,
+      updatedCount: updatedCount,
+    });
+  } catch (error) {
+    await db.query_trocaprecos("ROLLBACK");
+    console.error("Erro em atualizarPrecosEmsys:", error);
+    res.status(500).json({
+      message: "Falha ao atualizar preços: " + error.message,
     });
   }
 };

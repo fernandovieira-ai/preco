@@ -25,15 +25,29 @@ router.post("/sincronizaCadastros", drfPriceSwap.sincronizaCadastros);
 
 router.post("/atualizaUsuarios", drfPriceSwap.atualizaUsuarios);
 
+router.post(
+  "/atualizarCadastroClientes",
+  drfPriceSwap.atualizarCadastroClientes,
+);
+
 router.post("/buscaEmpresasBase", drfPriceSwap.buscaEmpresasBase);
 
 router.post("/buscaFiltroPreLoad", drfPriceSwap.buscaFiltroPreLoad);
 
 router.post("/buscaFiltro", drfPriceSwap.buscaFiltro);
 
+router.post("/buscaItensPrecoAtualizacao", drfPriceSwap.buscaItensPrecoAtualizacao);
+
 router.post("/buscaItemBomba", drfPriceSwap.buscaItemBomba);
 
 router.post("/buscaFiltroItem", drfPriceSwap.buscaFiltroItem);
+
+router.post("/buscaSubgruposPista", drfPriceSwap.buscaSubgruposPista);
+
+router.post(
+  "/atualizarCustosPrecoPista",
+  drfPriceSwap.atualizarCustosPrecoPista,
+);
 
 router.post("/buscaPrecosCliente", drfPriceSwap.buscaPrecosCliente);
 
@@ -64,5 +78,9 @@ router.post("/aprovaRegra", drfPriceSwap.aprovaRegra);
 router.post("/reprovaRegra", drfPriceSwap.reprovaRegra);
 
 router.post("/buscaPrecoIntervalo", drfPriceSwap.buscaPrecoIntervalo);
+
+router.post("/buscaPrecoEmsys", drfPriceSwap.buscaPrecoEmsys);
+
+router.post("/atualizarPrecosEmsys", drfPriceSwap.atualizarPrecosEmsys);
 
 module.exports = router;

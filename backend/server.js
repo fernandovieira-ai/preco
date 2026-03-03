@@ -18,6 +18,12 @@ const io = new Server(server, {
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
       if (origin.endsWith(".vercel.app")) return callback(null, true);
+
+      // Permitir qualquer IP da rede local 192.168.x.x
+      if (origin && /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+
       const allowed = [
         "http://localhost:4200",
         "http://localhost:8100",

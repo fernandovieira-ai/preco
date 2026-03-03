@@ -141,6 +141,7 @@
             </div>
             <div class="footer-actions">
               <ion-button
+                *ngIf="podeAprovarNegociacao"
                 fill="outline"
                 color="danger"
                 class="reject-button"
@@ -151,6 +152,7 @@
                 Reprovar
               </ion-button>
               <ion-button
+                *ngIf="podeAprovarNegociacao"
                 expand="block"
                 color="success"
                 class="approve-button"
@@ -160,6 +162,10 @@
                 <ion-icon name="checkmark-done" slot="start"></ion-icon>
                 Aprovar
               </ion-button>
+              <div *ngIf="!podeAprovarNegociacao" class="no-permission-message">
+                <ion-icon name="lock-closed-outline" color="medium"></ion-icon>
+                <span>Sem permissão para aprovar</span>
+              </div>
             </div>
           </div>
         </div>

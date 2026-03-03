@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  endPoint: "http://131.100.231.201:3000/drfPriceSwap",
-  endPointSocket: "http://131.100.231.201:3000",
+  endPoint: "https://precoback-production.up.railway.app/drfPriceSwap",
+  endPointSocket: "https://precoback-production.up.railway.app",
 };

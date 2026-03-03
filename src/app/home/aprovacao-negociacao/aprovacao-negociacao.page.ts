@@ -129,7 +129,22 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       });
   }
 
+  // Verifica se o usuário tem permissão para aprovar negociações
+  get podeAprovarNegociacao(): boolean {
+    return this.auth.userLogado?.ind_aprova_negociacao === "S";
+  }
+
   aprovarRegra(seq_lote, item) {
+    // Validar permissão antes de aprovar
+    if (!this.podeAprovarNegociacao) {
+      this.alert.presentAlert(
+        "Sem Permissão",
+        "",
+        "Você não tem permissão para aprovar negociações. Entre em contato com o administrador.",
+      );
+      return;
+    }
+
     this.alert
       .presentAlertConfirm(
         "ATENÇÃO",
@@ -174,6 +189,16 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
   }
 
   reprovarRegra(seq_lote, item) {
+    // Validar permissão antes de reprovar
+    if (!this.podeAprovarNegociacao) {
+      this.alert.presentAlert(
+        "Sem Permissão",
+        "",
+        "Você não tem permissão para reprovar negociações. Entre em contato com o administrador.",
+      );
+      return;
+    }
+
     this.alert
       .presentAlertConfirm(
         "ATENÇÃO",

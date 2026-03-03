@@ -1,0 +1,1162 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="voltar()">
+        <ion-icon name="arrow-back" slot="start"></ion-icon>
+        Voltar
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Nova Negociação</ion-title>
+  </ion-toolbar>
+
+  <!-- Barra de progresso -->
+  <ion-toolbar color="light">
+    <ion-progress-bar
+      [value]="progressPercent / 100"
+      color="success"
+    ></ion-progress-bar>
+  </ion-toolbar>
+
+  <!-- Indicador de steps -->
+  <ion-toolbar color="light">
+    <div class="steps-indicator">
+      <div
+        class="step"
+        [class.active]="currentStep >= 1"
+        [class.completed]="currentStep > 1"
+      >
+        <div class="step-circle">1</div>
+        <div class="step-label">Cliente</div>
+      </div>
+      <div class="step-line" [class.active]="currentStep >= 2"></div>
+      <div
+        class="step"
+        [class.active]="currentStep >= 2"
+        [class.completed]="currentStep > 2"
+      >
+        <div class="step-circle">2</div>
+        <div class="step-label">Produto</div>
+      </div>
+      <div class="step-line" [class.active]="currentStep >= 3"></div>
+      <div
+        class="step"
+        [class.active]="currentStep >= 3"
+        [class.completed]="currentStep > 3"
+      >
+        <div class="step-circle">3</div>
+        <div class="step-label">Negociação</div>
+      </div>
+      <div class="step-line" [class.active]="currentStep >= 4"></div>
+      <div
+        class="step"
+        [class.active]="currentStep >= 4"
+        [class.completed]="currentStep > 4"
+      >
+        <div class="step-circle">4</div>
+        <div class="step-label">Resumo</div>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <!-- STEP 1: SELEÇÃO DE CLIENTES -->
+  <div class="step-content" *ngIf="currentStep === 1">
+    <div class="step-header">
+      <h2>Selecione os Clientes</h2>
+      <p>Escolha um ou mais clientes para esta negociação</p>
+    </div>
+
+    <div class="filters-section">
+      <ion-searchbar
+        [(ngModel)]="clientesBusca"
+        placeholder="Buscar por nome, CNPJ ou código (mín. 3 caracteres)"
+        animated="true"
+        debounce="600"
+        (ionInput)="onClienteBuscaChange()"
+        (keydown.enter)="$event.preventDefault()"
+      >
+      </ion-searchbar>
+
+      <!-- Filtro de Data de Cadastro -->
+      <div class="date-filter-modern">
+        <div class="date-filter-header">
+          <ion-icon
+            name="calendar"
+            color="primary"
+            class="date-icon"
+          ></ion-icon>
+          <h3 class="date-filter-title">Pesquisar por Data de Cadastro</h3>
+        </div>
+
+        <!-- Inputs de Data Compactos -->
+        <div class="date-inputs-compact">
+          <div class="date-field">
+            <label class="date-label">Data Inicial</label>
+            <div class="date-input-wrapper">
+              <input
+                type="date"
+                class="date-input-native"
+                [(ngModel)]="dataCadastroInicial"
+                [max]="dataCadastroFinal || null"
+              />
+              <ion-icon
+                name="calendar-outline"
+                class="calendar-icon"
+              ></ion-icon>
+            </div>
+          </div>
+
+          <div class="date-separator-compact">
+            <ion-icon name="arrow-forward"></ion-icon>
+          </div>
+
+          <div class="date-field">
+            <label class="date-label">Data Final</label>
+            <div class="date-input-wrapper">
+              <input
+                type="date"
+                class="date-input-native"
+                [(ngModel)]="dataCadastroFinal"
+                [min]="dataCadastroInicial || null"
+              />
+              <ion-icon
+                name="calendar-outline"
+                class="calendar-icon"
+              ></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <div class="date-actions-compact">
+          <ion-button
+            fill="clear"
+            size="default"
+            color="medium"
+            (click)="limparFiltroData()"
+            class="clear-button"
+          >
+            <ion-icon name="close-circle" slot="start"></ion-icon>
+            Limpar
+          </ion-button>
+
+          <ion-button
+            fill="solid"
+            size="default"
+            color="primary"
+            (click)="aplicarFiltroData()"
+            class="apply-button"
+          >
+            <ion-icon name="search" slot="start"></ion-icon>
+            Aplicar
+          </ion-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="selection-info" *ngIf="clientesSelecionados.length > 0">
+      <ion-chip color="success">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <ion-label
+          >{{ clientesSelecionados.length }} cliente(s)
+          selecionado(s)</ion-label
+        >
+      </ion-chip>
+    </div>
+
+    <div class="items-list" *ngIf="clientesFiltrados.length > 0">
+      <ion-card
+        *ngFor="let cliente of clientesFiltrados; trackBy: trackByCliente"
+        [class.selected]="isClienteSelecionado(cliente)"
+        (click)="toggleCliente(cliente)"
+        button="true"
+      >
+        <ion-card-content>
+          <div class="item-content">
+            <div class="item-info">
+              <h3>{{ cliente.nom_pessoa }}</h3>
+              <p class="item-code">Código: {{ cliente.cod_pessoa }}</p>
+              <p class="item-doc">{{ cliente.num_cnpj_cpf }}</p>
+            </div>
+            <div class="item-check" *ngIf="isClienteSelecionado(cliente)">
+              <ion-icon name="checkmark-circle" color="success"></ion-icon>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div class="empty-state" *ngIf="clientesFiltrados.length === 0">
+      <ion-icon name="people-outline"></ion-icon>
+      <p>Use a busca ou filtro de data para encontrar clientes</p>
+    </div>
+  </div>
+
+  <!-- STEP 2: SELEÇÃO DE PRODUTOS -->
+  <div class="step-content" *ngIf="currentStep === 2">
+    <div class="step-header">
+      <h2>Selecione os Produtos</h2>
+      <p>Escolha os produtos que farão parte da negociação</p>
+    </div>
+
+    <div class="filters-section">
+      <!-- Seletor de Subgrupo -->
+      <div class="subgrupo-selector">
+        <ion-item lines="none">
+          <ion-icon
+            name="file-tray-stacked"
+            slot="start"
+            color="primary"
+          ></ion-icon>
+          <ion-label>Filtrar por Subgrupo</ion-label>
+          <ion-select
+            [(ngModel)]="subgrupoSelecionado"
+            placeholder="Todos os subgrupos"
+            (ionChange)="onSubgrupoChange()"
+            interface="action-sheet"
+            cancelText="Cancelar"
+          >
+            <ion-select-option [value]="null"
+              >Todos os subgrupos</ion-select-option
+            >
+            <ion-select-option
+              *ngFor="let subgrupo of subgruposDisponiveis"
+              [value]="subgrupo.cod_subgrupo"
+            >
+              {{ subgrupo.des_subgrupo }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <!-- Badge do subgrupo selecionado -->
+        <ion-chip
+          *ngIf="subgrupoSelecionado !== null"
+          color="primary"
+          (click)="limparFiltroSubgrupo()"
+        >
+          <ion-icon name="filter"></ion-icon>
+          <ion-label>{{ getSubgrupoNome(subgrupoSelecionado) }}</ion-label>
+          <ion-icon name="close-circle"></ion-icon>
+        </ion-chip>
+      </div>
+
+      <ion-searchbar
+        [(ngModel)]="produtosBusca"
+        placeholder="Buscar produto por nome, código ou código de barras"
+        animated="true"
+        debounce="300"
+        (ionInput)="onProdutoBuscaChange()"
+        (keydown.enter)="$event.preventDefault()"
+      >
+      </ion-searchbar>
+    </div>
+
+    <!-- Lista de produtos disponíveis (não selecionados) -->
+    <div
+      class="produtos-disponiveis-section"
+      *ngIf="produtosDisponiveisUnicos.length > 0"
+    >
+      <div class="section-title">
+        <ion-icon name="cube-outline" color="medium"></ion-icon>
+        <h3>Produtos Disponíveis</h3>
+        <ion-badge color="medium"
+          >{{ produtosDisponiveisUnicos.length }}</ion-badge
+        >
+      </div>
+
+      <ion-list class="produtos-list">
+        <ion-item
+          *ngFor="let produto of produtosDisponiveisUnicos; trackBy: trackByProduto"
+          class="produto-disponivel-item"
+          button
+          (click)="selecionarProdutoUnico(produto)"
+        >
+          <ion-label>
+            <h4>{{ getProdutoNome(produto) }}</h4>
+            <p class="produto-detalhes">
+              <span>Código: {{ produto.cod_item }}</span>
+              <span *ngIf="produto.cod_barra">
+                | Barras: {{ produto.cod_barra }}</span
+              >
+              <span *ngIf="produto.val_preco_venda" class="produto-preco">
+                | {{ produto.val_preco_venda | currency:'BRL' }}
+              </span>
+            </p>
+          </ion-label>
+          <ion-icon name="chevron-down" slot="end" color="medium"></ion-icon>
+        </ion-item>
+      </ion-list>
+    </div>
+
+    <!-- Accordions de empresas com produtos SELECIONADOS -->
+    <div
+      *ngIf="produtosSelecionados.length > 0"
+      class="empresas-selecionadas-wrapper"
+    >
+      <div class="empresas-header">
+        <h3 style="color: white">Produtos Selecionados por Empresa</h3>
+        <div class="expand-controls">
+          <ion-button
+            fill="clear"
+            size="small"
+            color="light"
+            (click)="expandirTodos()"
+          >
+            <ion-icon name="chevron-down-outline" slot="start"></ion-icon>
+            Expandir Todos
+          </ion-button>
+          <ion-button
+            fill="clear"
+            size="small"
+            color="light"
+            (click)="colapsarTodos()"
+          >
+            <ion-icon name="chevron-up-outline" slot="start"></ion-icon>
+            Colapsar Todos
+          </ion-button>
+        </div>
+      </div>
+
+      <ion-accordion-group
+        class="empresas-accordion-group"
+        #accordionGroup
+        [multiple]="true"
+      >
+        <ion-accordion
+          *ngFor="let empresaGroup of empresasComProdutosSelecionados; trackBy: trackByEmpresaGroup"
+          [value]="'empresa_' + empresaGroup.cod_empresa"
+          [toggleIconSlot]="'start'"
+        >
+          <ion-item slot="header" color="success">
+            <ion-icon name="business" slot="start"></ion-icon>
+            <ion-label>
+              <h3>{{ empresaGroup.nom_fantasia }}</h3>
+              <p>{{ empresaGroup.items.length }} produto(s) selecionado(s)</p>
+            </ion-label>
+            <ion-badge color="light" slot="end">
+              {{ empresaGroup.items.length }}
+            </ion-badge>
+          </ion-item>
+
+          <div class="accordion-content" slot="content">
+            <ion-list>
+              <ion-item
+                *ngFor="let produto of empresaGroup.items; trackBy: trackByProduto"
+                class="produto-selecionado-item"
+              >
+                <ion-label>
+                  <h4>{{ getProdutoNome(produto) }}</h4>
+                  <p class="produto-detalhes">
+                    <span>Código: {{ produto.cod_item }}</span>
+                    <span *ngIf="produto.cod_barra">
+                      | Barras: {{ produto.cod_barra }}</span
+                    >
+                    <span *ngIf="produto.val_preco_venda" class="produto-preco">
+                      | {{ produto.val_preco_venda | currency:'BRL' }}
+                    </span>
+                  </p>
+                </ion-label>
+                <ion-button
+                  fill="clear"
+                  color="danger"
+                  size="small"
+                  (click)="toggleProduto(produto)"
+                  slot="end"
+                >
+                  <ion-icon name="close-circle" slot="icon-only"></ion-icon>
+                </ion-button>
+              </ion-item>
+            </ion-list>
+          </div>
+        </ion-accordion>
+      </ion-accordion-group>
+    </div>
+
+    <!-- Estado vazio - sem filtros -->
+    <div
+      class="empty-state"
+      *ngIf="!produtosBusca && subgrupoSelecionado === null && produtosSelecionados.length === 0"
+    >
+      <ion-icon name="search-outline"></ion-icon>
+      <p>Use a busca ou filtro de subgrupo para encontrar produtos</p>
+      <small>Digite o nome, código ou código de barras do produto</small>
+    </div>
+
+    <!-- Estado vazio - com filtros mas sem resultados -->
+    <div
+      class="empty-state"
+      *ngIf="(produtosBusca || subgrupoSelecionado !== null) && produtosFiltrados.length === 0"
+    >
+      <ion-icon name="cube-outline"></ion-icon>
+      <p>Nenhum produto encontrado</p>
+      <small>Tente usar termos diferentes na busca</small>
+    </div>
+  </div>
+
+  <!-- STEP 3: CONFIGURAÇÃO DA NEGOCIAÇÃO -->
+  <div class="step-content" *ngIf="currentStep === 3">
+    <div class="step-header">
+      <h2>Configure a Negociação</h2>
+      <p>Defina os parâmetros do acordo</p>
+    </div>
+
+    <div class="config-section">
+      <!-- Tipo de Negociação -->
+      <div class="config-group">
+        <h3>Tipo de Negociação</h3>
+        <div class="tipo-buttons">
+          <ion-button
+            [color]="tipoNegociacao === 'desconto' ? 'success' : 'light'"
+            (click)="setTipoNegociacao('desconto')"
+          >
+            <ion-icon name="arrow-down-circle" slot="start"></ion-icon>
+            Desconto
+          </ion-button>
+          <ion-button
+            [color]="tipoNegociacao === 'acrescimo' ? 'warning' : 'light'"
+            (click)="setTipoNegociacao('acrescimo')"
+          >
+            <ion-icon name="arrow-up-circle" slot="start"></ion-icon>
+            Acréscimo
+          </ion-button>
+          <ion-button
+            [color]="tipoNegociacao === 'fixo' ? 'primary' : 'light'"
+            (click)="setTipoNegociacao('fixo')"
+          >
+            <ion-icon name="pricetag" slot="start"></ion-icon>
+            Preço Fixo
+          </ion-button>
+        </div>
+      </div>
+
+      <!-- Valor -->
+      <div class="config-group" *ngIf="tipoNegociacao">
+        <h3>Valor</h3>
+
+        <!-- Para Desconto e Acr\u00e9scimo -->
+        <ng-container *ngIf="tipoNegociacao !== 'fixo'">
+          <ion-item *ngIf="!valorPercentual || valorPercentual === 0">
+            <ion-label position="stacked">Valor em R$</ion-label>
+            <ion-input
+              type="number"
+              [(ngModel)]="valorReais"
+              placeholder="0,00"
+              step="0.01"
+              (ionInput)="onValorReaisChange()"
+              (keydown.enter)="$event.preventDefault()"
+            >
+            </ion-input>
+          </ion-item>
+          <ion-item *ngIf="!valorReais || valorReais === 0">
+            <ion-label position="stacked">Ou Percentual (%)</ion-label>
+            <ion-input
+              type="number"
+              [(ngModel)]="valorPercentual"
+              placeholder="0"
+              step="0.1"
+              (ionInput)="onValorPercentualChange()"
+              (keydown.enter)="$event.preventDefault()"
+            >
+            </ion-input>
+          </ion-item>
+        </ng-container>
+
+        <!-- Para Preço Fixo - Lista de Itens -->
+        <ng-container *ngIf="tipoNegociacao === 'fixo'">
+          <div class="preco-fixo-info">
+            <ion-icon name="information-circle-outline"></ion-icon>
+            <p>Defina o preço fixo para cada produto (ordenado por empresa)</p>
+          </div>
+
+          <div class="precos-fixos-list">
+            <ion-card
+              *ngFor="let item of produtosSelecionadosOrdenados; trackBy: trackByProduto"
+              class="item-preco-card"
+            >
+              <ion-card-content>
+                <div class="item-header">
+                  <div class="item-info">
+                    <div class="empresa-badge">
+                      <ion-icon name="business-outline"></ion-icon>
+                      <span>{{ item.nom_fantasia }}</span>
+                    </div>
+                    <h4>{{ getProdutoNome(item) }}</h4>
+                    <p class="item-code">Código: {{ item.cod_item }}</p>
+                  </div>
+                  <ion-icon name="cube" color="primary"></ion-icon>
+                </div>
+
+                <div class="item-precos">
+                  <div class="preco-atual" *ngIf="getPrecoAtualItem(item)">
+                    <ion-label class="preco-label">Preço de Venda</ion-label>
+                    <div class="preco-value">
+                      R$ {{ getPrecoAtualItem(item) | number: '1.2-2' }}
+                    </div>
+                  </div>
+
+                  <div class="preco-novo">
+                    <ion-item lines="none">
+                      <ion-label position="stacked" class="preco-label">
+                        <ion-icon name="pricetag-outline"></ion-icon>
+                        Novo Preço Fixo *
+                      </ion-label>
+                      <ion-input
+                        type="number"
+                        [value]="getPrecoFixoItem(item.cod_item)"
+                        (ionChange)="setPrecoFixoItem(item.cod_item, $event.detail.value)"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        class="preco-input"
+                      >
+                      </ion-input>
+                    </ion-item>
+                  </div>
+                </div>
+              </ion-card-content>
+            </ion-card>
+          </div>
+
+          <div class="empty-state" *ngIf="produtosSelecionados.length === 0">
+            <ion-icon name="alert-circle-outline" color="warning"></ion-icon>
+            <p>Nenhum produto selecionado</p>
+            <small>Volte para o passo 2 e selecione os produtos</small>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Tipo de Preço -->
+      <div class="config-group">
+        <h3>Tipo de Preço</h3>
+        <div class="chips-group">
+          <ion-chip
+            *ngFor="let tipo of tiposPreco; trackBy: trackByTipoPreco"
+            [color]="tipoPrecoSelecionado.includes(tipo.codigo) ? 'primary' : 'medium'"
+            (click)="toggleTipoPreco(tipo.codigo)"
+          >
+            <ion-label>{{ tipo.nome }}</ion-label>
+          </ion-chip>
+        </div>
+      </div>
+
+      <!-- Formas de Pagamento -->
+      <div class="config-group">
+        <h3>Formas de Pagamento</h3>
+        <ion-button
+          expand="block"
+          fill="outline"
+          (click)="setOpenModalFormaPagto(true)"
+        >
+          <ion-icon name="card-outline" slot="start"></ion-icon>
+          <span *ngIf="getFormasSelecionadas().length === 0">
+            Selecionar Formas de Pagamento
+          </span>
+          <span *ngIf="getFormasSelecionadas().length > 0">
+            {{getFormasSelecionadas().length}} forma(s) selecionada(s)
+          </span>
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: RESUMO -->
+  <div class="step-content" *ngIf="currentStep === 4">
+    <div class="step-header">
+      <ion-icon name="settings" class="config-icon"></ion-icon>
+      <h2>Configuração de Preços</h2>
+      <p>Configure as regras para aplicação</p>
+    </div>
+
+    <div class="resumo-section">
+      <!-- Título da seção -->
+      <div class="negociacoes-header">
+        <h3>Negociações</h3>
+        <ion-badge color="success"
+          >Qtd {{ produtosSelecionados.length }}</ion-badge
+        >
+      </div>
+
+      <!-- Cards de produtos -->
+      <div class="produtos-resumo">
+        <ion-card
+          *ngFor="let produto of produtosSelecionadosOrdenados; trackBy: trackByProduto"
+          class="produto-resumo-card"
+          style="margin: 6px 0"
+        >
+          <ion-card-header style="padding: 8px 12px">
+            <ion-card-title
+              style="font-size: 0.95em; color: var(--ion-color-primary)"
+            >
+              {{ getProdutoNome(produto) }}
+            </ion-card-title>
+            <ion-card-subtitle style="font-size: 0.75em; margin-top: 2px">
+              <span style="margin-right: 8px">
+                <ion-icon
+                  name="pricetag-outline"
+                  style="vertical-align: middle; font-size: 10px"
+                ></ion-icon>
+                Código: {{ produto.cod_item }}
+              </span>
+              <span
+                *ngIf="produto.nom_fantasia"
+                style="color: var(--ion-color-medium)"
+              >
+                <ion-icon
+                  name="business-outline"
+                  style="vertical-align: middle; font-size: 10px"
+                ></ion-icon>
+                {{ produto.nom_fantasia }}
+              </span>
+            </ion-card-subtitle>
+          </ion-card-header>
+
+          <ion-card-content style="padding: 8px">
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 6px;
+                margin-top: 4px;
+              "
+            >
+              <!-- Preço Atual -->
+              <div
+                style="
+                  background: #f0f0f0;
+                  padding: 6px 4px;
+                  border-radius: 6px;
+                  text-align: center;
+                "
+              >
+                <div
+                  style="
+                    font-size: 9px;
+                    color: #666;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 3px;
+                  "
+                >
+                  Preço Atual
+                </div>
+                <div style="font-size: 11px; font-weight: bold; color: #333">
+                  {{ (getPrecoAtualItem(produto) || 0) | currency:'BRL' }}
+                </div>
+              </div>
+
+              <!-- Novo Preço -->
+              <div
+                style="
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  padding: 6px 4px;
+                  border-radius: 6px;
+                  text-align: center;
+                  color: white;
+                "
+              >
+                <div
+                  style="
+                    font-size: 9px;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 3px;
+                    opacity: 0.9;
+                  "
+                >
+                  Novo Preço
+                </div>
+                <div style="font-size: 11px; font-weight: bold">
+                  {{ calcularNovoPreco(produto) | currency:'BRL' }}
+                </div>
+                <div style="font-size: 8px; margin-top: 2px; opacity: 0.9">
+                  <span *ngIf="calcularDiferencaPreco(produto) > 0">↑ +</span>
+                  <span *ngIf="calcularDiferencaPreco(produto) < 0">↓ </span>
+                  {{ calcularDiferencaPreco(produto) | currency:'BRL' }}
+                </div>
+              </div>
+
+              <!-- Custo -->
+              <div
+                style="
+                  background: #fff3cd;
+                  padding: 6px 4px;
+                  border-radius: 6px;
+                  text-align: center;
+                  border: 1px solid #ffc107;
+                "
+              >
+                <div
+                  style="
+                    font-size: 9px;
+                    color: #856404;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 3px;
+                  "
+                >
+                  Custo
+                </div>
+                <div style="font-size: 11px; font-weight: bold; color: #856404">
+                  {{ getCustoItem(produto) | currency:'BRL' }}
+                </div>
+              </div>
+
+              <!-- Margem -->
+              <div
+                style="
+                  background: #d4edda;
+                  padding: 6px 4px;
+                  border-radius: 6px;
+                  text-align: center;
+                  border: 1px solid #28a745;
+                "
+              >
+                <div
+                  style="
+                    font-size: 9px;
+                    color: #155724;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    margin-bottom: 3px;
+                  "
+                >
+                  Margem
+                </div>
+                <div style="font-size: 11px; font-weight: bold; color: #155724">
+                  {{ calcularMargem(produto) | currency:'BRL' }}
+                </div>
+                <div style="font-size: 8px; margin-top: 1px; color: #155724">
+                  {{ calcularMargemPercentual(produto).toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Detalhes da negociação -->
+      <ion-card class="detalhes-negociacao">
+        <ion-card-header>
+          <ion-card-title>
+            <ion-icon name="information-circle" slot="start"></ion-icon>
+            Detalhes da Negociação
+          </ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="detalhes-grid">
+            <!-- Linha 1: Tipo e Valor -->
+            <div class="detalhe-row">
+              <div class="detalhe-item">
+                <div class="detalhe-label">Tipo de Negociação</div>
+                <div
+                  class="detalhe-valor destaque"
+                  [class.desconto]="tipoNegociacao === 'desconto'"
+                  [class.acrescimo]="tipoNegociacao === 'acrescimo'"
+                  [class.fixo]="tipoNegociacao === 'fixo'"
+                >
+                  {{ tipoNegociacao === 'desconto' ? 'Desconto' : tipoNegociacao
+                  === 'acrescimo' ? 'Acréscimo' : 'Preço Fixo' }}
+                </div>
+              </div>
+              <div class="detalhe-item" *ngIf="tipoNegociacao !== 'fixo'">
+                <div class="detalhe-label">Valor Aplicado</div>
+                <div class="detalhe-valor">
+                  {{ valorReais ? 'R$ ' + valorReais.toFixed(2) : '' }} {{
+                  valorPercentual ? valorPercentual + '%' : '' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Linha 2: Contadores -->
+            <div class="detalhe-row contadores">
+              <div class="contador-item">
+                <ion-icon name="pricetag" color="primary"></ion-icon>
+                <span class="contador-numero"
+                  >{{ tipoPrecoSelecionado.length }}</span
+                >
+                <span class="contador-label">Tipo(s) de Preço</span>
+              </div>
+              <div class="contador-item">
+                <ion-icon name="card" color="success"></ion-icon>
+                <span class="contador-numero"
+                  >{{ formasPagamentoSelecionadas.length }}</span
+                >
+                <span class="contador-label">Forma(s) de Pagamento</span>
+              </div>
+              <div class="contador-item">
+                <ion-icon name="people" color="tertiary"></ion-icon>
+                <span class="contador-numero"
+                  >{{ clientesSelecionados.length }}</span
+                >
+                <span class="contador-label">Cliente(s)</span>
+              </div>
+              <div
+                class="contador-item"
+                *ngIf="produtosSelecionados.length > 0"
+              >
+                <ion-icon name="cube" color="warning"></ion-icon>
+                <span class="contador-numero"
+                  >{{ produtosSelecionados.length }}</span
+                >
+                <span class="contador-label">Produto(s)</span>
+              </div>
+            </div>
+
+            <!-- Linha 3: Período e Volume -->
+            <div class="detalhe-row info-secundaria">
+              <div class="info-item periodo">
+                <ion-icon name="calendar-outline"></ion-icon>
+                <span
+                  >{{ formatarData(dataInicio) }} a {{ formatarData(dataFim)
+                  }}</span
+                >
+              </div>
+              <div
+                class="info-item volume"
+                *ngIf="volumeMinimo || volumeMaximo"
+              >
+                <ion-icon name="speedometer-outline"></ion-icon>
+                <span>
+                  {{ volumeMinimo ? 'Mín: ' + volumeMinimo + 'L' : '' }} {{
+                  volumeMaximo ? (volumeMinimo ? ' | Máx: ' : 'Máx: ') +
+                  volumeMaximo + 'L' : '' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <!-- STEP 5: SUCESSO -->
+  <div class="step-content success-content" *ngIf="currentStep === 5">
+    <div class="success-icon">
+      <ion-icon name="checkmark-circle" color="success"></ion-icon>
+    </div>
+    <h2>Negociação Enviada!</h2>
+    <p>Sua negociação foi enviada com sucesso e está aguardando aprovação.</p>
+  </div>
+</ion-content>
+
+<ion-footer *ngIf="currentStep <= 4">
+  <ion-toolbar>
+    <div class="footer-buttons">
+      <ion-button *ngIf="currentStep > 1" fill="outline" (click)="goBack()">
+        <ion-icon name="arrow-back" slot="start"></ion-icon>
+        Voltar
+      </ion-button>
+
+      <ion-button
+        *ngIf="currentStep < 4"
+        [disabled]="!canAdvance()"
+        (click)="goNext()"
+      >
+        Avançar
+        <ion-icon name="arrow-forward" slot="end"></ion-icon>
+      </ion-button>
+
+      <ion-button
+        *ngIf="currentStep === 4"
+        color="success"
+        [disabled]="!canAdvance()"
+        (click)="goNext()"
+      >
+        <ion-icon name="send" slot="start"></ion-icon>
+        Enviar Negociação
+      </ion-button>
+    </div>
+  </ion-toolbar>
+</ion-footer>
+
+<!-- Modal de Formas de Pagamento -->
+<ion-modal [isOpen]="isModalFormaPagto" mode="ios">
+  <ng-template>
+    <ion-header class="ion-no-border">
+      <ion-toolbar>
+        <ion-title>
+          Formas de Pagamento
+          <ion-badge
+            *ngIf="getFormasSelecionadas().length > 0"
+            color="success"
+            class="selection-badge"
+          >
+            {{getFormasSelecionadas().length}} selecionada(s)
+          </ion-badge>
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="setOpenModalFormaPagto(false)" fill="clear">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+      <ion-toolbar>
+        <ion-searchbar
+          [debounce]="500"
+          placeholder="Buscar Forma de Pagamento"
+          (ionInput)="filtrarFormaPagto($event)"
+        ></ion-searchbar>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <!-- Seleção por Tipo -->
+      <div class="type-select-section">
+        <ion-label class="filter-label">
+          <ion-icon name="filter-outline"></ion-icon>
+          Filtrar por Tipo
+        </ion-label>
+        <ion-select
+          (ionChange)="marcarFormasPagto($event)"
+          placeholder="Selecione um ou mais tipos"
+          [multiple]="true"
+          interface="alert"
+          okText="Confirmar"
+          cancelText="Cancelar"
+          class="type-filter-select"
+        >
+          <ion-select-option
+            *ngFor="let item of this.movimento.tipoFormaPagto"
+            [value]="item"
+          >
+            {{item.des_forma_pagto}}
+          </ion-select-option>
+        </ion-select>
+      </div>
+
+      <!-- Chips dos tipos selecionados -->
+      <div
+        class="selected-types-chips"
+        *ngIf="tiposSelecionadosFiltro.length > 0"
+      >
+        <ion-chip
+          *ngFor="let tipo of tiposSelecionadosFiltro"
+          color="primary"
+          class="type-chip"
+        >
+          <ion-icon name="pricetag"></ion-icon>
+          <ion-label>{{tipo.des_forma_pagto}}</ion-label>
+        </ion-chip>
+      </div>
+
+      <!-- Lista de Formas -->
+      <div class="payments-list">
+        <ion-item
+          *ngFor="let item of this.formaPagtoFiltrada"
+          class="payment-item"
+          [class.selected]="item.ind_selecionado"
+        >
+          <ion-label>
+            <h3>{{item.des_forma_pagto}}</h3>
+            <p>Código: {{item.cod_forma_pagto}}</p>
+          </ion-label>
+
+          <ion-checkbox
+            slot="end"
+            [checked]="item.ind_selecionado"
+            (ionChange)="addFormaPagto(item.cod_forma_pagto, $event)"
+          >
+          </ion-checkbox>
+        </ion-item>
+      </div>
+
+      <!-- Estado vazio -->
+      <div *ngIf="formaPagtoFiltrada.length === 0" class="empty-state">
+        <ion-icon name="card-outline"></ion-icon>
+        <p>Nenhuma forma de pagamento disponível</p>
+        <small
+          >Verifique se as formas de pagamento estão cadastradas no
+          sistema</small
+        >
+      </div>
+    </ion-content>
+
+    <ion-footer>
+      <ion-toolbar>
+        <div class="footer-actions">
+          <!-- Botões de ação rápida -->
+          <div class="quick-actions">
+            <ion-button
+              fill="outline"
+              size="small"
+              color="success"
+              (click)="selecionarTodasFormas()"
+            >
+              <ion-icon slot="start" name="checkmark-done-outline"></ion-icon>
+              Selecionar Todos
+            </ion-button>
+            <ion-button
+              fill="outline"
+              size="small"
+              color="danger"
+              (click)="desmarcarTodasFormas()"
+            >
+              <ion-icon slot="start" name="close-circle-outline"></ion-icon>
+              Desmarcar Todos
+            </ion-button>
+          </div>
+
+          <!-- Botão principal -->
+          <ion-button
+            expand="block"
+            color="primary"
+            (click)="setOpenModalFormaPagto(false)"
+            class="confirm-button"
+          >
+            Confirmar Seleção
+          </ion-button>
+        </div>
+      </ion-toolbar>
+    </ion-footer>
+  </ng-template>
+</ion-modal>
+
+<!-- Modal de Produtos Selecionados -->
+<ion-modal
+  [isOpen]="isModalProdutosSelecionados"
+  (didDismiss)="fecharModalProdutosSelecionados()"
+>
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>
+          Produtos Selecionados
+          <ion-badge color="light" class="item-count-badge">
+            {{ produtosSelecionados.length }}
+          </ion-badge>
+        </ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="fecharModalProdutosSelecionados()" fill="clear">
+            <ion-icon name="close-outline"></ion-icon>
+          </ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+
+    <ion-content class="ion-padding">
+      <div class="produtos-selecionados-info">
+        <ion-card color="light">
+          <ion-card-content>
+            <div style="display: flex; align-items: center; gap: 10px">
+              <ion-icon
+                name="information-circle"
+                color="primary"
+                style="font-size: 24px"
+              ></ion-icon>
+              <div>
+                <strong>Produtos prontos para negociação</strong>
+                <p style="margin: 5px 0 0 0; font-size: 0.9em">
+                  Os preços serão configurados na próxima etapa (desconto,
+                  acréscimo ou preço fixo)
+                </p>
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Lista de produtos selecionados -->
+      <div class="produtos-selecionados-list">
+        <ion-card
+          *ngFor="let produto of produtosSelecionados; trackBy: trackByProduto"
+          class="produto-card"
+        >
+          <ion-card-header>
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: start;
+              "
+            >
+              <div style="flex: 1">
+                <ion-card-title style="font-size: 1em">
+                  {{ getProdutoNome(produto) }}
+                </ion-card-title>
+                <ion-card-subtitle>
+                  <div
+                    style="
+                      display: flex;
+                      flex-direction: column;
+                      gap: 3px;
+                      margin-top: 5px;
+                    "
+                  >
+                    <span><strong>Código:</strong> {{ produto.cod_item }}</span>
+                    <span *ngIf="produto.cod_barra"
+                      ><strong>Cód. Barras:</strong> {{ produto.cod_barra
+                      }}</span
+                    >
+                    <span *ngIf="produto.des_subgrupo">
+                      <ion-icon
+                        name="file-tray-stacked"
+                        style="font-size: 0.9em"
+                      ></ion-icon>
+                      {{ produto.des_subgrupo }}
+                    </span>
+                    <span *ngIf="produto.nom_fantasia">
+                      <ion-icon
+                        name="business"
+                        style="font-size: 0.9em"
+                      ></ion-icon>
+                      {{ produto.nom_fantasia }}
+                    </span>
+                  </div>
+                </ion-card-subtitle>
+              </div>
+              <ion-button
+                fill="clear"
+                color="danger"
+                size="small"
+                (click)="removerProdutoSelecionado(produto)"
+              >
+                <ion-icon name="trash" slot="icon-only"></ion-icon>
+              </ion-button>
+            </div>
+          </ion-card-header>
+
+          <ion-card-content>
+            <div class="preco-info-section">
+              <div class="info-row">
+                <span class="info-label">Preço Atual:</span>
+                <span class="info-value"
+                  >{{ produto.val_preco_venda | currency:'BRL' }}</span
+                >
+              </div>
+              <div class="info-row" *ngIf="produto.val_custo_medio">
+                <span class="info-label">Custo Médio:</span>
+                <span class="info-value"
+                  >{{ produto.val_custo_medio | currency:'BRL' }}</span
+                >
+              </div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </div>
+
+      <!-- Estado vazio -->
+      <div *ngIf="produtosSelecionados.length === 0" class="empty-state">
+        <ion-icon name="cube-outline"></ion-icon>
+        <p>Nenhum produto selecionado</p>
+        <small>Volte e selecione produtos da lista</small>
+      </div>
+    </ion-content>
+
+    <ion-footer>
+      <ion-toolbar>
+        <div class="footer-actions">
+          <ion-button
+            expand="block"
+            color="primary"
+            (click)="fecharModalProdutosSelecionados()"
+            [disabled]="produtosSelecionados.length === 0"
+            class="confirm-button"
+          >
+            <ion-icon name="checkmark-circle" slot="start"></ion-icon>
+            Continuar
+          </ion-button>
+        </div>
+      </ion-toolbar>
+    </ion-footer>
+  </ng-template>
+</ion-modal>

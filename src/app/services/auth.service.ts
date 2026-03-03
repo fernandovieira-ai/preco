@@ -125,6 +125,44 @@ export class AuthService {
     this.router.navigate(["/login"]);
   }
 
+  // Atualiza cadastro de clientes em background após login
+  atualizarCadastroClientes(schema: string): void {
+    if (!schema) {
+      console.warn("Schema não fornecido para atualização de cadastro");
+      return;
+    }
+
+    const token = window.localStorage.getItem("token");
+    const body = { schema };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+
+    // Executa de forma assíncrona sem bloquear o login
+    this.httpClient
+      .post<any>(`${this.baseURL}/atualizarCadastroClientes`, body, httpOptions)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          console.error("Erro ao atualizar cadastro de clientes:", err);
+          // Não propaga o erro para não afetar o login
+          return throwError(() => err);
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          console.log("Cadastro de clientes atualizado com sucesso:", response);
+        },
+        error: (err) => {
+          console.error("Falha ao atualizar cadastro (não afeta login):", err);
+        },
+      });
+  }
+
   getToken() {
     const acess = window.localStorage.getItem("token");
     return acess;

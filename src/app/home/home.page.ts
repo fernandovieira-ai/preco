@@ -599,6 +599,10 @@ export class HomePage implements OnInit {
     this.selecaoEmpresa(event, item);
   }
 
+  limparFiltroEmpresa() {
+    this.empresasFiltradas = [...this.empresas];
+  }
+
   logout() {
     this.auth.destroyToken();
   }

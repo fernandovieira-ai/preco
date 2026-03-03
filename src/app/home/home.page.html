@@ -157,17 +157,17 @@
         <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
       </div>
 
-      <!-- Inclusão de Negociações -->
+      <!-- Negociação de Combustível -->
       <div
         class="feature-card"
-        routerLink="/home/filtro"
+        routerLink="/home/precos"
         [class.disabled]="auth.userLogado.cod_empresa_usuario.length <= 0"
       >
         <div class="feature-icon-container success">
-          <ion-icon name="add-circle-outline"></ion-icon>
+          <ion-icon name="flash-outline"></ion-icon>
         </div>
         <div class="feature-content">
-          <h3 class="feature-title">Inclusão de Negociações</h3>
+          <h3 class="feature-title">Negociação de Combustível</h3>
           <p class="feature-description">Crie novas negociações de preços</p>
         </div>
         <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
@@ -207,18 +207,18 @@
         <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
       </div>
 
-      <!-- Atualização de Filtros -->
+      <!-- Negociação Produtos Pista -->
       <div
         class="feature-card"
-        routerLink="/home/filtro-atualizacao"
+        routerLink="/home/negociacao-produtos-pista"
         [class.disabled]="auth.userLogado.cod_empresa_usuario.length <= 0"
       >
-        <div class="feature-icon-container secondary">
-          <ion-icon name="filter-outline"></ion-icon>
+        <div class="feature-icon-container success">
+          <ion-icon name="add-circle-outline"></ion-icon>
         </div>
         <div class="feature-content">
-          <h3 class="feature-title">Atualização de Filtros</h3>
-          <p class="feature-description">Gerencie filtros de consulta</p>
+          <h3 class="feature-title">Negociação Produtos Pista</h3>
+          <p class="feature-description">Crie novas negociações de produtos</p>
         </div>
         <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
       </div>
@@ -242,7 +242,7 @@
   </div>
 
   <!-- Modal de Seleção de Empresas -->
-  <ion-modal trigger="open-modal-empresas" mode="ios" class="empresa-modal">
+  <ion-modal trigger="open-modal-empresas" mode="ios" class="empresa-modal" (ionModalWillPresent)="limparFiltroEmpresa()">
     <ng-template>
       <ion-header class="ion-no-border">
         <ion-toolbar class="modal-toolbar">

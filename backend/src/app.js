@@ -23,6 +23,11 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     if (origin.endsWith(".vercel.app")) return callback(null, true);
 
+    // Permitir qualquer IP da rede local 192.168.x.x
+    if (origin && /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {

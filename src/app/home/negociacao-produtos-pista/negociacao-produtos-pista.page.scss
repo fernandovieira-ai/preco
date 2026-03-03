@@ -1,0 +1,2497 @@
+// ========== STEPS INDICATOR ==========
+
+.steps-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  gap: 8px;
+  background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 15px;
+      transition:
+        background-color 0.3s ease,
+        color 0.3s ease,
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+      border: 2px solid transparent;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      transition:
+        color 0.3s ease,
+        font-weight 0.3s ease;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    &.active {
+      .step-circle {
+        background: white;
+        color: #24024b;
+        transform: scale(1.15);
+        box-shadow: 0 4px 12px rgba(255, 255, 255, 0.5);
+        border-color: white;
+      }
+
+      .step-label {
+        color: white;
+        font-weight: 700;
+      }
+    }
+
+    &.completed {
+      .step-circle {
+        background: #00d68f;
+        color: white;
+        border-color: #00d68f;
+      }
+
+      .step-label {
+        color: #00d68f;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .step-line {
+    flex: 1;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.2);
+    max-width: 50px;
+    min-width: 20px;
+    transition: background-color 0.3s ease;
+    border-radius: 2px;
+
+    &.active {
+      background: white;
+    }
+  }
+}
+
+// ========== CONTENT ==========
+
+ion-content {
+  --background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+.step-content {
+  padding: 16px;
+  animation: fadeIn 0.3s ease-in;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (max-width: 576px) {
+    padding: 12px;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.step-header {
+  text-align: center;
+  margin-bottom: 24px;
+
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 8px 0;
+  }
+
+  p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+  }
+}
+
+// ========== FILTERS SECTION ==========
+
+.filters-section {
+  margin-bottom: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 16px;
+
+  ion-searchbar {
+    --background: white;
+    --border-radius: 10px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 0 0 12px 0;
+  }
+
+  // Filtro de Data de Cadastro
+  .date-filter-modern {
+    background: white;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-top: 12px;
+
+    .date-filter-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(36, 2, 75, 0.1);
+
+      .date-icon {
+        font-size: 24px;
+      }
+
+      .date-filter-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #24024b;
+        flex: 1;
+      }
+    }
+
+    // Inputs de data compactos
+    .date-inputs-compact {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+
+      .date-field {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        .date-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #24024b;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+          margin-bottom: 4px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .date-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+
+          .calendar-icon {
+            position: absolute;
+            right: 12px;
+            font-size: 22px;
+            color: #6c5ce7;
+            pointer-events: none;
+            z-index: 1;
+            transition: transform 0.2s ease;
+          }
+        }
+
+        &:hover .calendar-icon {
+          transform: scale(1.1);
+        }
+
+        .date-input-native {
+          width: 100%;
+          padding: 10px 12px;
+          padding-right: 42px;
+          border: 2px solid #e0e0e0;
+          border-radius: 8px;
+          font-size: 14px;
+          font-family: inherit;
+          color: #333;
+          background: white;
+          transition: all 0.3s ease;
+          cursor: pointer;
+
+          &:hover {
+            border-color: #6c5ce7;
+          }
+
+          &:focus {
+            outline: none;
+            border-color: #6c5ce7;
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+          }
+
+          // Ocultar ícone nativo do calendário
+          &::-webkit-calendar-picker-indicator {
+            position: absolute;
+            right: 0;
+            width: 40px;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+          }
+
+          // Para Firefox
+          &::-moz-calendar-picker-indicator {
+            opacity: 0;
+          }
+        }
+      }
+
+      .date-separator-compact {
+        margin-top: 20px;
+        color: #6c5ce7;
+        font-size: 16px;
+        opacity: 0.6;
+      }
+    }
+
+    // Botões de ação compactos
+    .date-actions-compact {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 16px;
+
+      .clear-button {
+        --padding-start: 20px;
+        --padding-end: 20px;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: none;
+        min-width: 110px;
+      }
+
+      .apply-button {
+        --padding-start: 24px;
+        --padding-end: 24px;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        --border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: none;
+        min-width: 120px;
+        box-shadow: 0 2px 8px rgba(108, 92, 231, 0.25);
+
+        &:hover {
+          box-shadow: 0 4px 12px rgba(108, 92, 231, 0.35);
+        }
+      }
+    }
+
+    .date-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .apply-date-button {
+        --border-radius: 10px;
+        --padding-top: 12px;
+        --padding-bottom: 12px;
+        font-weight: 600;
+        text-transform: none;
+        margin: 0;
+        height: 44px;
+
+        ion-icon {
+          font-size: 20px;
+        }
+      }
+    }
+  }
+}
+
+// ========== SELECTION INFO ==========
+
+.selection-info {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+
+  ion-chip {
+    font-weight: 600;
+  }
+}
+
+// ========== EMPTY STATE ==========
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+
+  ion-icon {
+    font-size: 80px;
+    color: rgba(255, 255, 255, 0.6);
+    opacity: 0.8;
+    margin-bottom: 16px;
+  }
+
+  p {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+  }
+}
+
+// ========== ITEMS LIST (CLIENTES) ==========
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  ion-card {
+    margin: 0;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition:
+      transform 0.2s ease,
+      border 0.2s ease,
+      background 0.2s ease;
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &.selected {
+      border: 2px solid #00d68f;
+      background: rgba(0, 214, 143, 0.05);
+    }
+
+    ion-card-content {
+      padding: 10px 12px;
+    }
+
+    .item-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+
+      .item-info {
+        flex: 1;
+
+        h3 {
+          margin: 0 0 3px 0;
+          font-size: 15px;
+          font-weight: 600;
+          color: var(--ion-color-dark);
+          line-height: 1.3;
+        }
+
+        p {
+          margin: 1px 0;
+          font-size: 11.5px;
+          color: var(--ion-color-medium);
+          line-height: 1.4;
+
+          &.item-code {
+            font-weight: 500;
+          }
+        }
+      }
+
+      .item-check {
+        ion-icon {
+          font-size: 28px;
+        }
+      }
+    }
+  }
+}
+
+// ========== ITEMS GRID (COMBUST�VEIS) ==========
+.empresa-section {
+  margin-bottom: 20px;
+
+  .empresa-header {
+    background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px rgba(36, 2, 75, 0.2);
+
+    .empresa-icon {
+      font-size: 24px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .empresa-info {
+      flex: 1;
+
+      .empresa-title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: white;
+        letter-spacing: 0.5px;
+      }
+
+      .empresa-code {
+        margin: 4px 0 0 0;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 500;
+      }
+    }
+  }
+}
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+
+  ion-card {
+    margin: 0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition:
+      transform 0.2s ease,
+      border 0.2s ease,
+      background 0.2s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &.selected {
+      border: 2px solid #00d68f;
+      background: rgba(0, 214, 143, 0.05);
+    }
+
+    ion-card-content {
+      padding: 16px;
+      text-align: center;
+
+      .grid-item {
+        position: relative;
+
+        .item-check {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+
+          ion-icon {
+            font-size: 28px;
+          }
+        }
+
+        h3 {
+          margin: 8px 0;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--ion-color-dark);
+        }
+
+        p.item-code {
+          margin: 4px 0 0 0;
+          font-size: 11px;
+          color: var(--ion-color-medium);
+        }
+      }
+    }
+  }
+}
+
+// ========== BUSCA DE PRODUTOS ==========
+
+.search-produtos-wrapper {
+  margin-bottom: 16px;
+
+  ion-searchbar {
+    --background: white;
+    --border-radius: 10px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 0;
+  }
+}
+
+// ========== PRODUTOS DISPONÍVEIS ==========
+
+.produtos-disponiveis-section {
+  margin-bottom: 16px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: white;
+    border-radius: 12px 12px 0 0;
+    border-bottom: 2px solid #e9ecef;
+
+    ion-icon {
+      font-size: 24px;
+    }
+
+    h3 {
+      flex: 1;
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+      color: #666;
+    }
+
+    ion-badge {
+      font-size: 12px;
+      padding: 4px 10px;
+    }
+  }
+
+  .produtos-list {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    max-height: 400px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #6c5ce7;
+      border-radius: 3px;
+    }
+
+    .produto-disponivel-item {
+      --background: white;
+      --border-color: #e9ecef;
+      transition: all 0.2s ease;
+
+      &:hover {
+        --background: #f8f9fa;
+        transform: translateX(4px);
+      }
+
+      ion-label {
+        h4 {
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0 0 4px 0;
+          color: #24024b;
+        }
+
+        .produto-detalhes {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          font-size: 12px;
+          margin: 0;
+          color: #666;
+
+          .empresa-tag {
+            background: #6c5ce7;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+          }
+
+          .produto-preco {
+            font-weight: 700;
+            color: #6c5ce7;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========== ACCORDIONS ==========
+
+.empresas-accordion-group {
+  margin-bottom: 16px;
+
+  ion-accordion {
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 2px solid #00d68f;
+
+    ion-item[slot="header"] {
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --min-height: 64px;
+
+      h3 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 4px 0;
+        color: white !important;
+      }
+
+      p {
+        font-size: 13px;
+        margin: 0;
+        color: rgba(255, 255, 255, 0.9) !important;
+      }
+    }
+
+    .accordion-content {
+      background: #f8f9fa;
+      padding: 0;
+
+      ion-list {
+        background: transparent;
+        padding: 0;
+
+        .produto-selecionado-item {
+          --background: white;
+          margin: 8px;
+          border-radius: 8px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          border-left: 4px solid #00d68f;
+
+          ion-label {
+            h4 {
+              font-size: 14px;
+              font-weight: 600;
+              margin: 0 0 4px 0;
+              color: #24024b;
+            }
+
+            .produto-detalhes {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 8px;
+              font-size: 12px;
+              margin: 0;
+              color: #666;
+
+              span {
+                font-size: 12px;
+              }
+
+              .produto-preco {
+                font-weight: 700;
+                color: #6c5ce7;
+              }
+            }
+          }
+
+          ion-button {
+            --padding-start: 8px;
+            --padding-end: 8px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========== COMPATIBILIDADE ==========
+
+.produtos-empresa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+
+  .produto-empresa-card {
+    margin: 0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition:
+      transform 0.2s ease,
+      border 0.2s ease,
+      background 0.2s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
+
+    &.selected {
+      border: 2px solid #00d68f;
+      background: rgba(0, 214, 143, 0.05);
+    }
+
+    ion-card-content {
+      padding: 12px;
+
+      .produto-card-content {
+        position: relative;
+
+        .produto-check {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          z-index: 10;
+
+          ion-icon {
+            font-size: 32px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+          }
+        }
+
+        .produto-info {
+          h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #24024b;
+            line-height: 1.3;
+            min-height: 36px;
+          }
+
+          .produto-codigo {
+            margin: 3px 0;
+            font-size: 11px;
+            color: #666;
+          }
+
+          .produto-preco {
+            margin: 6px 0 0 0;
+            font-size: 13px;
+            font-weight: 700;
+            color: #6c5ce7;
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========== CONFIG SECTION ==========
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  box-sizing: border-box;
+
+  .config-group {
+    width: 100%;
+    box-sizing: border-box;
+
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #24024b;
+      margin: 0 0 12px 0;
+    }
+
+    .tipo-buttons {
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      justify-content: space-between;
+
+      ion-button {
+        flex: 1;
+        height: 48px;
+        font-weight: 600;
+        font-size: 14px;
+        min-width: 0;
+
+        ion-icon {
+          font-size: 20px;
+          margin-right: 4px;
+        }
+      }
+    }
+
+    ion-item {
+      --padding-start: 0;
+      --inner-padding-end: 0;
+      --background: white;
+      margin-bottom: 8px;
+      border-radius: 14px;
+      overflow: hidden;
+
+      ion-input {
+        --background: #f8f9fa;
+        --border-radius: 14px;
+        --padding-start: 16px;
+        --padding-end: 16px;
+        --padding-top: 14px;
+        --padding-bottom: 14px;
+        border-radius: 14px;
+        border: 2px solid #e9ecef;
+        transition: all 0.3s ease;
+        font-size: 15px;
+        font-weight: 500;
+
+        &::part(native) {
+          border-radius: 14px;
+        }
+
+        &:focus-within,
+        &.has-focus {
+          --background: white;
+          border-color: #6c5ce7;
+          box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+          transform: translateY(-1px);
+        }
+      }
+
+      ion-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #24024b;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+    }
+
+    .chips-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      ion-chip {
+        cursor: pointer;
+        transition: transform 0.2s ease;
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+    }
+
+    .duracao-info {
+      margin-top: 8px;
+      text-align: center;
+
+      ion-note {
+        font-size: 13px;
+        font-weight: 500;
+      }
+    }
+
+    // PREÇOS FIXOS POR ITEM
+    .preco-fixo-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      background: rgba(108, 92, 231, 0.1);
+      border-radius: 6px;
+      border-left: 3px solid #6c5ce7;
+      margin-bottom: 12px;
+      width: 100%;
+      box-sizing: border-box;
+
+      ion-icon {
+        font-size: 18px;
+        color: #6c5ce7;
+        flex-shrink: 0;
+      }
+
+      p {
+        margin: 0;
+        font-size: 12px;
+        color: #6c5ce7;
+        font-weight: 500;
+        line-height: 1.3;
+      }
+    }
+
+    .precos-fixos-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 450px;
+      overflow-y: auto;
+      overflow-x: visible;
+      padding: 2px;
+      width: 100%;
+      box-sizing: border-box;
+
+      .item-preco-card {
+        margin: 0;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        transition: all 0.2s ease;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: visible;
+        min-height: auto;
+
+        &:hover {
+          box-shadow: 0 2px 6px rgba(108, 92, 231, 0.15);
+          border-color: #6c5ce7;
+        }
+
+        ion-card-content {
+          padding: 6px 8px !important;
+          width: 100%;
+          box-sizing: border-box;
+          overflow: visible;
+        }
+
+        .item-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 5px;
+          padding-bottom: 5px;
+          border-bottom: 1px solid #f0f0f0;
+
+          .item-info {
+            flex: 1;
+            min-width: 0; // Prevenir overflow
+
+            .empresa-badge {
+              display: inline-flex;
+              align-items: center;
+              gap: 3px;
+              background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+              color: white;
+              padding: 2px 6px;
+              border-radius: 3px;
+              font-size: 9px;
+              font-weight: 600;
+              margin-bottom: 4px;
+              line-height: 1;
+
+              ion-icon {
+                font-size: 12px;
+                margin: 0;
+              }
+
+              span {
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+              }
+            }
+
+            h4 {
+              margin: 0 0 1px 0;
+              font-size: 12px;
+              font-weight: 600;
+              color: #333;
+              line-height: 1.15;
+              word-break: break-word;
+            }
+
+            .item-code {
+              margin: 0;
+              font-size: 10px;
+              color: #666;
+              font-weight: 500;
+            }
+          }
+
+          ion-icon {
+            font-size: 16px;
+            flex-shrink: 0;
+            margin-left: 6px;
+          }
+        }
+
+        .item-precos {
+          display: flex !important;
+          gap: 6px;
+          align-items: stretch;
+          flex-wrap: wrap;
+          width: 100%;
+          box-sizing: border-box;
+          min-height: 50px;
+          visibility: visible !important;
+          opacity: 1 !important;
+          overflow: visible !important;
+
+          .preco-atual {
+            flex: 1 1 100px;
+            min-width: 100px;
+            max-width: 100%;
+            background: rgba(108, 92, 231, 0.05);
+            border-radius: 4px;
+            padding: 5px 7px;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            visibility: visible !important;
+            opacity: 1 !important;
+
+            .preco-label {
+              display: block;
+              font-size: 9px;
+              font-weight: 600;
+              color: #666;
+              text-transform: uppercase;
+              letter-spacing: 0.2px;
+              margin-bottom: 2px;
+              line-height: 1.1;
+            }
+
+            .preco-value {
+              font-size: 12px;
+              font-weight: 700;
+              color: #6c5ce7;
+              line-height: 1;
+              margin-top: auto;
+            }
+          }
+
+          .preco-novo {
+            flex: 1.5 1 130px;
+            min-width: 130px;
+            max-width: 100%;
+            display: flex !important;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            visibility: visible !important;
+            opacity: 1 !important;
+
+            ion-item {
+              --padding-start: 0 !important;
+              --inner-padding-end: 0 !important;
+              --padding-end: 0 !important;
+              --background: transparent !important;
+              --border-width: 0 !important;
+              --min-height: auto !important;
+              margin: 0 !important;
+              width: 100%;
+              max-width: 100%;
+              box-sizing: border-box;
+              overflow: visible !important;
+              display: block !important;
+
+              ion-label {
+                &.preco-label {
+                  display: flex !important;
+                  align-items: center;
+                  gap: 2px;
+                  font-size: 9px;
+                  font-weight: 600;
+                  color: #333;
+                  text-transform: uppercase;
+                  letter-spacing: 0.2px;
+                  margin-bottom: 2px;
+                  line-height: 1.1;
+                  white-space: normal;
+                  word-wrap: break-word;
+                  overflow-wrap: break-word;
+                  min-height: 12px;
+                  visibility: visible !important;
+                  opacity: 1 !important;
+
+                  ion-icon {
+                    font-size: 10px;
+                    color: #6c5ce7;
+                    flex-shrink: 0;
+                  }
+                }
+              }
+
+              ion-input {
+                &.preco-input {
+                  --background: white !important;
+                  --padding-start: 7px !important;
+                  --padding-end: 7px !important;
+                  --padding-top: 5px !important;
+                  --padding-bottom: 5px !important;
+                  border: 1.5px solid #6c5ce7 !important;
+                  border-radius: 4px !important;
+                  font-size: 12px !important;
+                  font-weight: 600 !important;
+                  color: #333 !important;
+                  height: 32px !important;
+                  min-height: 32px !important;
+                  max-height: 32px !important;
+                  margin: 0;
+                  width: 100%;
+                  max-width: 100%;
+                  box-sizing: border-box;
+                  display: block !important;
+                  visibility: visible !important;
+                  opacity: 1 !important;
+
+                  &:focus-within {
+                    --background: rgba(108, 92, 231, 0.05) !important;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Scrollbar customizado
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: #f0f0f0;
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: #6c5ce7;
+        border-radius: 3px;
+
+        &:hover {
+          background: #5a4bc9;
+        }
+      }
+    }
+  }
+}
+
+// Responsive para preços fixos
+@media (max-width: 768px) {
+  .config-group {
+    .precos-fixos-list {
+      gap: 8px;
+
+      .item-preco-card {
+        overflow: visible;
+
+        ion-card-content {
+          padding: 8px !important;
+          overflow: visible;
+        }
+
+        .item-header {
+          margin-bottom: 6px;
+          padding-bottom: 6px;
+
+          .item-info {
+            .empresa-badge {
+              margin-bottom: 4px;
+              padding: 2px 6px;
+              font-size: 8px;
+            }
+
+            h4 {
+              font-size: 11px;
+              margin-bottom: 2px;
+            }
+
+            .item-code {
+              font-size: 9px;
+            }
+          }
+
+          ion-icon {
+            font-size: 14px;
+          }
+        }
+
+        .item-precos {
+          flex-direction: column;
+          gap: 8px;
+          min-height: auto;
+
+          .preco-atual {
+            flex: 1 1 auto;
+            min-width: 100%;
+            width: 100%;
+            padding: 6px 8px;
+            margin-bottom: 0;
+
+            .preco-label {
+              font-size: 9px;
+              margin-bottom: 3px;
+            }
+
+            .preco-value {
+              font-size: 13px;
+            }
+          }
+
+          .preco-novo {
+            flex: 1 1 auto;
+            min-width: 100%;
+            width: 100%;
+            margin-top: 0;
+
+            ion-item {
+              overflow: visible;
+
+              ion-label.preco-label {
+                font-size: 9px;
+                margin-bottom: 4px;
+
+                ion-icon {
+                  font-size: 10px;
+                }
+              }
+
+              ion-input.preco-input {
+                width: 100% !important;
+                display: block !important;
+                visibility: visible !important;
+                height: 36px !important;
+                min-height: 36px !important;
+                max-height: 36px !important;
+                font-size: 13px !important;
+                --padding-start: 8px !important;
+                --padding-end: 8px !important;
+                --padding-top: 6px !important;
+                --padding-bottom: 6px !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+@media (max-width: 576px) {
+  .config-group {
+    .preco-fixo-info {
+      padding: 6px 8px;
+
+      p {
+        font-size: 10px;
+      }
+    }
+
+    .precos-fixos-list {
+      max-height: 350px;
+      gap: 6px;
+
+      .item-preco-card {
+        overflow: visible;
+
+        ion-card-content {
+          padding: 6px 8px !important;
+          overflow: visible;
+        }
+
+        .item-header {
+          margin-bottom: 4px;
+          padding-bottom: 4px;
+
+          .item-info {
+            .empresa-badge {
+              margin-bottom: 3px;
+              padding: 2px 5px;
+              font-size: 8px;
+            }
+
+            h4 {
+              font-size: 10px;
+              margin-bottom: 2px;
+            }
+
+            .item-code {
+              font-size: 8px;
+            }
+          }
+
+          ion-icon {
+            font-size: 13px;
+          }
+        }
+
+        .item-precos {
+          gap: 6px;
+          min-height: auto;
+          overflow: visible;
+
+          .preco-atual {
+            padding: 5px 7px;
+            margin-bottom: 0;
+
+            .preco-label {
+              font-size: 8px;
+              margin-bottom: 2px;
+            }
+
+            .preco-value {
+              font-size: 12px;
+            }
+          }
+
+          .preco-novo {
+            margin-top: 0;
+
+            ion-item {
+              overflow: visible;
+
+              ion-label.preco-label {
+                display: flex !important;
+                visibility: visible !important;
+                font-size: 8px;
+                margin-bottom: 3px;
+
+                ion-icon {
+                  font-size: 9px;
+                }
+              }
+
+              ion-input.preco-input {
+                display: block !important;
+                visibility: visible !important;
+                height: 32px !important;
+                min-height: 32px !important;
+                max-height: 32px !important;
+                font-size: 12px !important;
+                --padding-start: 7px !important;
+                --padding-end: 7px !important;
+                --padding-top: 5px !important;
+                --padding-bottom: 5px !important;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ========== RESUMO SECTION ==========
+
+.resumo-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .negociacoes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+
+    h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: white;
+    }
+
+    ion-badge {
+      font-size: 12px;
+      padding: 4px 12px;
+    }
+  }
+
+  .combustiveis-resumo {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .combustivel-card {
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+      .combustivel-titulo {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: #1a1a1a;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .preco-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+
+        @media (max-width: 576px) {
+          grid-template-columns: 1fr;
+        }
+
+        .preco-box {
+          background: white;
+          border-radius: 8px;
+          padding: 12px;
+          box-sizing: border-box;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          position: relative;
+
+          .preco-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+
+          .preco-valor {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+          }
+
+          .preco-diferenca {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+
+            &.positiva {
+              color: #22c55e;
+            }
+
+            &.negativa {
+              color: #ef4444;
+            }
+          }
+
+          .margem-percentual {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 2px;
+            opacity: 0.7;
+          }
+
+          // Box específicos por tipo
+          &.preco-atual-box {
+            border-left: 4px solid #3b82f6;
+
+            .preco-label {
+              color: #3b82f6;
+            }
+
+            .preco-valor {
+              color: #3b82f6;
+            }
+          }
+
+          &.novo-preco-box {
+            border-left: 4px solid #22c55e;
+
+            .preco-label {
+              color: #22c55e;
+            }
+
+            .preco-valor {
+              color: #22c55e;
+            }
+
+            .preco-diferenca {
+              background: rgba(34, 197, 94, 0.1);
+              padding: 4px 8px;
+              border-radius: 4px;
+              display: inline-block;
+              align-self: flex-start;
+            }
+          }
+
+          &.custo-box {
+            border-left: 4px solid #f97316;
+
+            .preco-label {
+              color: #f97316;
+            }
+
+            .preco-valor {
+              color: #f97316;
+            }
+          }
+
+          &.margem-box {
+            border-left: 4px solid #a855f7;
+
+            .preco-label {
+              color: #a855f7;
+            }
+
+            .preco-valor {
+              color: #a855f7;
+            }
+
+            .margem-percentual {
+              color: #a855f7;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .detalhes-negociacao {
+    margin-top: 8px;
+
+    ion-card-header {
+      padding: 12px 16px;
+
+      ion-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
+
+        ion-icon {
+          font-size: 18px;
+        }
+      }
+    }
+
+    ion-card-content {
+      padding: 16px;
+    }
+
+    .detalhes-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      .detalhe-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+
+        &.contadores {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 12px;
+        }
+
+        &.info-secundaria {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .detalhe-item {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+
+          .detalhe-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+          }
+
+          .detalhe-valor {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+
+            &.destaque {
+              font-size: 18px;
+              font-weight: 700;
+
+              &.desconto {
+                color: #00d68f;
+              }
+
+              &.acrescimo {
+                color: #ffaa00;
+              }
+
+              &.fixo {
+                color: #24024b;
+              }
+            }
+          }
+        }
+      }
+
+      .contadores {
+        .contador-item {
+          background: #f8f9fa;
+          border-radius: 8px;
+          padding: 12px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          text-align: center;
+          border: 1px solid #e9ecef;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+          }
+
+          ion-icon {
+            font-size: 24px;
+          }
+
+          .contador-numero {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1a1a1a;
+          }
+
+          .contador-label {
+            font-size: 11px;
+            color: #666;
+            font-weight: 500;
+          }
+        }
+      }
+
+      .info-secundaria {
+        border-top: 1px solid #e9ecef;
+        padding-top: 16px;
+
+        .info-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: #495057;
+          padding: 8px 12px;
+          background: #f8f9fa;
+          border-radius: 6px;
+
+          ion-icon {
+            font-size: 18px;
+            color: #6c757d;
+          }
+
+          &.periodo {
+            ion-icon {
+              color: var(--ion-color-primary);
+            }
+          }
+
+          &.volume {
+            ion-icon {
+              color: var(--ion-color-warning);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  ion-card {
+    margin: 0;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+    ion-card-header {
+      padding: 16px;
+
+      ion-card-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #24024b;
+      }
+    }
+
+    ion-card-content {
+      padding: 0 16px 16px 16px;
+
+      ion-list {
+        padding: 0;
+
+        ion-item {
+          --padding-start: 0;
+          --inner-padding-end: 0;
+          margin-bottom: 8px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+      }
+
+      .resumo-item {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+
+        strong {
+          font-size: 13px;
+          color: #666;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        span {
+          font-size: 15px;
+          color: #2c3e50;
+          font-weight: 500;
+
+          &.desconto {
+            color: #00d68f;
+          }
+
+          &.acrescimo {
+            color: #ffaa00;
+          }
+
+          &.fixo {
+            color: #24024b;
+          }
+        }
+
+        .resumo-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+
+          ion-chip {
+            margin: 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+.step-header {
+  .config-icon {
+    font-size: 32px;
+    color: var(--ion-color-primary);
+    margin-bottom: 8px;
+  }
+}
+
+// ========== SUCCESS CONTENT ==========
+
+.success-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  animation: bounceIn 0.6s ease;
+
+  .success-icon {
+    ion-icon {
+      font-size: 120px;
+      animation: pulse 1.5s infinite;
+    }
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin: 16px 0;
+  }
+
+  p {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 300px;
+    margin: 0;
+  }
+}
+
+@keyframes bounceIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+// ========== FOOTER BUTTONS ==========
+
+ion-footer {
+  ion-toolbar {
+    --background: white;
+    --border-color: var(--ion-color-light);
+  }
+
+  .footer-buttons {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+
+    ion-button {
+      flex: 1;
+      height: 48px;
+      font-weight: 600;
+      font-size: 15px;
+
+      &[fill="outline"] {
+        --border-width: 2px;
+      }
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+
+@media (max-width: 576px) {
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .steps-indicator {
+    padding: 12px 8px;
+    gap: 4px;
+
+    .step {
+      gap: 4px;
+
+      .step-circle {
+        width: 30px;
+        height: 30px;
+        font-size: 13px;
+      }
+
+      .step-label {
+        font-size: 10px;
+      }
+    }
+
+    .step-line {
+      max-width: 24px;
+      min-width: 12px;
+    }
+  }
+
+  .step-header {
+    h2 {
+      font-size: 20px;
+    }
+
+    p {
+      font-size: 13px;
+    }
+  }
+
+  // Filtro de data em mobile
+  .filters-section {
+    .date-filter-modern {
+      .date-inputs-compact {
+        flex-direction: column;
+        gap: 12px;
+
+        .date-separator-compact {
+          display: none;
+        }
+
+        .date-field {
+          .date-input-native {
+            font-size: 16px; // Evita zoom no iOS
+          }
+        }
+      }
+
+      .date-actions-compact {
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 12px;
+
+        .clear-button,
+        .apply-button {
+          width: 100%;
+          margin: 0;
+          min-width: auto;
+        }
+      }
+
+      .date-actions {
+        gap: 10px;
+
+        ion-button {
+          font-size: 14px;
+        }
+      }
+    }
+  }
+
+  // Botões de tipo de negociação em mobile
+  .config-section {
+    .tipo-buttons {
+      flex-direction: column;
+      gap: 8px;
+
+      ion-button {
+        font-size: 13px;
+        height: 44px;
+      }
+    }
+  }
+
+  .footer-buttons {
+    flex-direction: column;
+
+    ion-button {
+      width: 100%;
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  .items-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .produtos-empresa-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .step-content {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 992px) {
+  .items-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .produtos-empresa-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+// ========== MODAL DE FORMAS DE PAGAMENTO ==========
+
+ion-modal {
+  --background: white;
+
+  ion-content {
+    --background: white;
+  }
+
+  .selection-badge {
+    margin-left: 8px;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+  }
+
+  .type-select-section {
+    margin-bottom: 16px;
+    background: rgba(108, 92, 231, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #6c5ce7;
+      margin-bottom: 8px;
+
+      ion-icon {
+        font-size: 16px;
+      }
+    }
+
+    .type-filter-select {
+      width: 100%;
+      --background: white;
+      border: 1px solid rgba(108, 92, 231, 0.3);
+      border-radius: 6px;
+      padding: 8px;
+    }
+  }
+
+  .selected-types-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(108, 92, 231, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid #6c5ce7;
+
+    .type-chip {
+      margin: 0;
+      height: 32px;
+      font-size: 13px;
+
+      ion-icon {
+        font-size: 16px;
+        margin-right: 4px;
+      }
+    }
+  }
+
+  .payments-list {
+    ion-item {
+      --background: white;
+    }
+  }
+
+  .payment-item {
+    --border-color: rgba(0, 0, 0, 0.1);
+    margin-bottom: 8px;
+    border-radius: 8px;
+    overflow: hidden;
+
+    &.selected {
+      --background: rgba(108, 92, 231, 0.1);
+      border-left: 4px solid #6c5ce7;
+    }
+
+    ion-label {
+      h3 {
+        font-weight: 600;
+        color: #333;
+      }
+
+      p {
+        font-size: 12px;
+        color: #666;
+      }
+    }
+  }
+
+  // Footer com ações rápidas
+  ion-footer {
+    ion-toolbar {
+      --padding-start: 16px;
+      --padding-end: 16px;
+      --padding-top: 12px;
+      --padding-bottom: 12px;
+    }
+
+    .footer-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+
+      .quick-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: space-between;
+
+        ion-button {
+          flex: 1;
+          font-size: 13px;
+          text-transform: none;
+          --border-radius: 6px;
+
+          ion-icon {
+            font-size: 18px;
+          }
+        }
+      }
+
+      .confirm-button {
+        --border-radius: 8px;
+        font-weight: 600;
+        text-transform: none;
+        font-size: 15px;
+      }
+    }
+  }
+}
+
+// Estilos para o modal de seleção de tipos
+::ng-deep {
+  .alert-wrapper {
+    max-width: 400px !important;
+
+    .alert-head {
+      padding: 20px 16px 12px !important;
+
+      .alert-title {
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        color: #333 !important;
+      }
+    }
+
+    .alert-checkbox-group {
+      max-height: 400px !important;
+      padding: 8px 0 !important;
+
+      .alert-checkbox-button {
+        padding: 12px 16px !important;
+        min-height: 50px !important;
+        border-bottom: 1px solid #f0f0f0 !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+          background-color: rgba(108, 92, 231, 0.05) !important;
+        }
+
+        &.alert-checkbox-button-checked {
+          background-color: rgba(108, 92, 231, 0.12) !important;
+          border-left: 4px solid #6c5ce7 !important;
+          padding-left: 12px !important;
+
+          .alert-checkbox-icon {
+            border-color: #6c5ce7 !important;
+            background-color: #6c5ce7 !important;
+            width: 22px !important;
+            height: 22px !important;
+
+            .alert-checkbox-inner {
+              border-width: 2px !important;
+              border-color: white !important;
+              border-style: solid !important;
+              border-top: 0 !important;
+              border-left: 0 !important;
+              transform: rotate(45deg) !important;
+              position: absolute !important;
+              top: 3px !important;
+              left: 7px !important;
+              width: 6px !important;
+              height: 12px !important;
+              display: block !important;
+            }
+          }
+
+          .alert-checkbox-label {
+            color: #6c5ce7 !important;
+            font-weight: 600 !important;
+            font-size: 15px !important;
+          }
+        }
+
+        .alert-checkbox-icon {
+          border-width: 2px !important;
+          border-color: #d0d0d0 !important;
+          background-color: white !important;
+          width: 22px !important;
+          height: 22px !important;
+          border-radius: 4px !important;
+          margin-right: 12px !important;
+          position: relative !important;
+        }
+
+        .alert-checkbox-label {
+          font-size: 15px !important;
+          color: #333 !important;
+          flex: 1 !important;
+        }
+      }
+    }
+
+    .alert-button-group {
+      padding: 8px !important;
+      border-top: 1px solid #e0e0e0 !important;
+
+      .alert-button {
+        font-size: 15px !important;
+        text-transform: none !important;
+        padding: 10px 16px !important;
+
+        &.alert-button-role-cancel {
+          color: #666 !important;
+          font-weight: 500 !important;
+        }
+
+        &:not(.alert-button-role-cancel) {
+          color: #6c5ce7 !important;
+          font-weight: 700 !important;
+        }
+      }
+    }
+  }
+}
+
+// ========== SELETOR DE SUBGRUPO ==========
+
+.subgrupo-selector {
+  margin-bottom: 16px;
+  background: white !important;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+
+  ion-item {
+    --padding-start: 16px;
+    --padding-end: 16px;
+    --min-height: 56px;
+    --background: white !important;
+    --color: #333 !important;
+
+    ion-icon {
+      font-size: 24px;
+      margin-right: 12px;
+    }
+
+    ion-label {
+      font-weight: 600;
+      color: #333 !important;
+    }
+
+    ion-select {
+      max-width: 100%;
+      font-weight: 500;
+      color: #333 !important;
+      --placeholder-color: #666 !important;
+      --placeholder-opacity: 1 !important;
+    }
+  }
+
+  ion-chip {
+    margin: 8px 16px 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    ion-icon:last-child {
+      margin-left: 4px;
+    }
+  }
+}
+
+// ========== MODAL DE PRODUTOS SELECIONADOS ==========
+
+.produtos-selecionados-info {
+  margin-bottom: 16px;
+
+  ion-card {
+    margin: 0 0 16px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.produtos-selecionados-list {
+  .produto-card {
+    margin-bottom: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+
+    ion-card-header {
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+
+      ion-card-title {
+        color: #333;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      ion-card-subtitle {
+        color: #666;
+        font-size: 0.85em;
+        line-height: 1.5;
+
+        span {
+          display: block;
+          margin-bottom: 2px;
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          strong {
+            color: #444;
+          }
+        }
+      }
+    }
+
+    ion-card-content {
+      padding: 16px;
+    }
+  }
+}
+
+.preco-info-section {
+  padding: 12px 0;
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #e9ecef;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 0.9em;
+      color: #666;
+      font-weight: 600;
+    }
+
+    .info-value {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: #6c5ce7;
+    }
+  }
+}
+
+.item-precos {
+  align-items: flex-start;
+  margin-bottom: 12px;
+
+  .preco-atual {
+    flex: 1;
+
+    label {
+      display: block;
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+
+    .preco-valor {
+      font-size: 1.2em;
+      font-weight: 700;
+      color: #6c5ce7;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      text-align: center;
+    }
+  }
+
+  .preco-novo {
+    flex: 1;
+
+    ion-item {
+      --background: #f8f9fa;
+      --border-radius: 8px;
+      --padding-start: 12px;
+      --padding-end: 12px;
+
+      ion-label {
+        font-size: 0.85em;
+        color: #666;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      ion-input {
+        font-size: 1.1em;
+        font-weight: 600;
+        color: #333;
+        text-align: right;
+      }
+    }
+  }
+}
+
+.preco-diferenca {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+
+  ion-chip {
+    font-weight: 600;
+    font-size: 0.9em;
+
+    ion-icon {
+      margin-right: 4px;
+    }
+  }
+}
+
+.item-count-badge {
+  margin-left: 8px;
+  font-size: 0.85em;
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+// ========== ESTILOS GLOBAIS PARA ACTION SHEET ==========
+
+// Clarear fundo do action sheet do ion-select
+:root {
+  ion-picker {
+    --background: #ffffff !important;
+    --ion-background-color: #ffffff !important;
+  }
+}
+
+// Estilos para action sheet (usado no select de subgrupo)
+.action-sheet-group {
+  background: #ffffff !important;
+}
+
+.action-sheet-button {
+  color: #333333 !important;
+
+  &.action-sheet-selected {
+    font-weight: 700;
+    color: #6c5ce7 !important;
+  }
+}
+
+.action-sheet-title {
+  color: #666666 !important;
+  background: #f8f9fa !important;
+}
+
+.action-sheet-cancel {
+  background: #ffffff !important;
+
+  .action-sheet-button-inner {
+    color: #dc3545 !important;
+  }
+}

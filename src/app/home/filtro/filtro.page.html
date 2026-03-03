@@ -244,33 +244,8 @@
             <h3 class="date-filter-title">Pesquisar por Data de Cadastro</h3>
           </div>
 
-          <div class="date-inputs-container">
-            <div class="date-input-wrapper">
-              <ion-label class="date-label">Data Inicial</ion-label>
-              <ion-input
-                type="date"
-                [(ngModel)]="dataCadastroInicial"
-                class="modern-date-input"
-              ></ion-input>
-            </div>
-
-            <div class="date-separator">
-              <ion-icon name="arrow-forward-outline"></ion-icon>
-            </div>
-
-            <div class="date-input-wrapper">
-              <ion-label class="date-label">Data Final</ion-label>
-              <ion-input
-                type="date"
-                [(ngModel)]="dataCadastroFinal"
-                class="modern-date-input"
-              ></ion-input>
-            </div>
-          </div>
-
           <div class="date-actions">
             <ion-button
-              *ngIf="dataCadastroInicial || dataCadastroFinal"
               expand="block"
               fill="solid"
               color="primary"
@@ -280,19 +255,6 @@
             >
               <ion-icon name="filter-outline" slot="start"></ion-icon>
               Aplicar Filtro
-            </ion-button>
-
-            <ion-button
-              *ngIf="dataCadastroInicial || dataCadastroFinal"
-              expand="block"
-              fill="clear"
-              color="danger"
-              size="small"
-              (click)="limparFiltroData()"
-              class="clear-date-button"
-            >
-              <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-              Limpar datas
             </ion-button>
           </div>
         </div>
@@ -605,7 +567,10 @@
         </ion-header>
 
         <ion-content class="ion-padding">
-          <div class="items-selection-list" *ngIf="itensFiltradosModal.length > 0">
+          <div
+            class="items-selection-list"
+            *ngIf="itensFiltradosModal.length > 0"
+          >
             <div
               *ngFor="let item of itensFiltradosModal"
               class="item-selection-card"

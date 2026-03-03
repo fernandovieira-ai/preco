@@ -130,7 +130,7 @@ export class LoginPage implements OnInit, AfterViewInit {
   connectionStatus = true;
   showStats = false;
   currentDate = new Date();
-  currentVersion = "1.0.13";
+  currentVersion = "1.0.14";
   shakeButton = false;
   logoLoaded = true; // Para controlar exibição da logo vs texto
   lembrarSenha = false; // Controle do checkbox lembrar-me
@@ -333,6 +333,13 @@ export class LoginPage implements OnInit, AfterViewInit {
 
       // Mostrar mensagem de sucesso
       this.showMessage("Login realizado com sucesso!", "success");
+
+      // Atualizar cadastro de clientes em background (não bloqueia o login)
+      if (this.authservice.userLogado.schema) {
+        this.authservice.atualizarCadastroClientes(
+          this.authservice.userLogado.schema,
+        );
+      }
     }
   }
 
