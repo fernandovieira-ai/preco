@@ -572,12 +572,6 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
 
   // ========== BUSCA DE PREÇOS ==========
   async buscarPrecos() {
-      "Tipo Negociação:",
-      this.tipoNegociacao,
-      "| Tipo:",
-      typeof this.tipoNegociacao,
-    );
-
     const loading = await this.loadingCtrl.create({
       message: "Buscando preços...",
       duration: 60000,
