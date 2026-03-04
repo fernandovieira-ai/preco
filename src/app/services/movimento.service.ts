@@ -232,6 +232,22 @@ export class MovimentoService {
     itens,
   ): Observable<any> {
     const token = window.localStorage.getItem("token");
+
+    // LOG CRÍTICO: Verificar dados antes de enviar ao backend
+    console.log("=== SERVIÇO novaNegociacao - DADOS ANTES DO POST ===");
+    console.log("Total de itens:", itens.length);
+    itens.slice(0, 3).forEach((item, idx) => {
+      console.log(`Item ${idx + 1}:`, {
+        ind_tipo_negociacao: item.ind_tipo_negociacao,
+        ind_percentual_valor: item.ind_percentual_valor,
+        ind_tipo_preco_base: item.ind_tipo_preco_base,
+        val_preco_venda_a: item.val_preco_venda_a,
+        val_preco_venda_b: item.val_preco_venda_b,
+        valor_calculado: item.valor_calculado,
+        valor: item.valor,
+      });
+    });
+
     const body = {
       schema,
       cod_empresa,

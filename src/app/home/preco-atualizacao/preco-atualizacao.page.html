@@ -111,7 +111,10 @@
         </div>
 
         <ion-list lines="full">
-          <ion-radio-group [(ngModel)]="tipoNegociacao">
+          <ion-radio-group
+            [(ngModel)]="tipoNegociacao"
+            (ionChange)="onTipoNegociacaoChange()"
+          >
             <ion-item>
               <ion-label>Acréscimo</ion-label>
               <ion-radio
@@ -316,7 +319,10 @@
             <!-- Cálculo do Novo Preço -->
             <div class="controle-group novo-preco">
               <h3>Cálculo do Novo Preço</h3>
-              <ion-radio-group [(ngModel)]="tipoOperacao">
+              <ion-radio-group
+                [(ngModel)]="tipoOperacao"
+                (ionChange)="onTipoOperacaoChange()"
+              >
                 <ion-item>
                   <ion-label>Valor Fixo</ion-label>
                   <ion-radio
@@ -343,12 +349,39 @@
                 </ion-item>
               </ion-radio-group>
 
+              <!-- Escolha entre Percentual ou Valor (só aparece se não for fixo) -->
+              <ion-radio-group
+                *ngIf="tipoOperacao !== 'fixo'"
+                [(ngModel)]="tipoCalculo"
+              >
+                <ion-item>
+                  <ion-label>Percentual (%)</ion-label>
+                  <ion-radio
+                    slot="start"
+                    value="percentual"
+                    [aria-label]="'Percentual'"
+                  ></ion-radio>
+                </ion-item>
+                <ion-item>
+                  <ion-label>Valor (R$)</ion-label>
+                  <ion-radio
+                    slot="start"
+                    value="valor"
+                    [aria-label]="'Valor em Reais'"
+                  ></ion-radio>
+                </ion-item>
+              </ion-radio-group>
+
               <ion-item>
-                <ion-label position="floating">Valor</ion-label>
+                <ion-label position="floating">
+                  {{ tipoOperacao === 'fixo' ? 'Novo Preço (R$)' : (tipoCalculo
+                  === 'percentual' ? 'Valor (%)' : 'Valor (R$)') }}
+                </ion-label>
                 <ion-input
                   type="number"
                   [(ngModel)]="valorAlteracao"
-                  placeholder="0"
+                  [placeholder]="tipoOperacao === 'fixo' ? 'R$ 0.00' : 
+                                 (tipoCalculo === 'percentual' ? '0.00%' : 'R$ 0.00')"
                   step="0.01"
                 ></ion-input>
               </ion-item>
@@ -428,7 +461,7 @@
                     <td>{{getNomeEmpresa(preco.cod_empresa)}}</td>
                     <td>{{preco.nom_pessoa || '-'}}</td>
                     <td>{{preco.des_item || 'Código: ' + preco.cod_item}}</td>
-                    <td>{{preco.val_preco_venda_a | number: '1.2-2'}}</td>
+                    <td>{{preco.val_preco_venda | number: '1.2-2'}}</td>
                     <td>{{preco.val_novo_preco_a | number: '1.2-2'}}</td>
                     <td>
                       {{preco.dta_inicio ? (preco.dta_inicio | date:

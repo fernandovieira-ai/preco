@@ -75,6 +75,7 @@ export class HistoricoDetalhePage implements OnInit {
                   item.val_preco_venda,
                   novoPreco,
                 ),
+                texto_alteracao: this.getTextoAlteracao(item, novoPreco),
               };
             });
           }),
@@ -197,7 +198,8 @@ export class HistoricoDetalhePage implements OnInit {
   }
 
   calcularNovoPreco(item: minhasNegociacoesDetalhe): number {
-    const valorAplicado =
+    const precoAtual = item.val_preco_venda;
+    const valorInformado =
       item.val_preco_venda_a ||
       item.val_preco_venda_b ||
       item.val_preco_venda_c ||
@@ -205,7 +207,56 @@ export class HistoricoDetalhePage implements OnInit {
       item.val_preco_venda_e ||
       0;
 
-    return valorAplicado || item.val_preco_venda;
+    // Preço Fixo: retorna o valor informado
+    if (item.ind_tipo_negociacao === "P") {
+      return valorInformado || precoAtual;
+    }
+
+    // Acréscimo ou Desconto
+    if (item.ind_tipo_negociacao === "A" || item.ind_tipo_negociacao === "D") {
+      const sinal = item.ind_tipo_negociacao === "A" ? 1 : -1;
+
+      if (item.ind_percentual_valor === "P") {
+        // Percentual: calcular em cima do preço atual
+        return precoAtual + ((precoAtual * valorInformado) / 100) * sinal;
+      } else {
+        // Valor: somar ou subtrair o valor fixo
+        return precoAtual + valorInformado * sinal;
+      }
+    }
+
+    return precoAtual;
+  }
+
+  getTextoAlteracao(item: minhasNegociacoesDetalhe, novoPreco: number): string {
+    const valorInformado =
+      item.val_preco_venda_a ||
+      item.val_preco_venda_b ||
+      item.val_preco_venda_c ||
+      item.val_preco_venda_d ||
+      item.val_preco_venda_e ||
+      0;
+
+    // Preço Fixo: mostrar variação em R$
+    if (item.ind_tipo_negociacao === "P") {
+      const variacao = novoPreco - item.val_preco_venda;
+      return `${variacao > 0 ? "+" : ""}R$ ${variacao.toFixed(2)}`;
+    }
+
+    // Acréscimo ou Desconto
+    if (item.ind_tipo_negociacao === "A" || item.ind_tipo_negociacao === "D") {
+      const sinal = item.ind_tipo_negociacao === "A" ? "+" : "-";
+
+      if (item.ind_percentual_valor === "P") {
+        // Mostrar percentual informado
+        return `${sinal}${valorInformado.toFixed(2)}%`;
+      } else {
+        // Mostrar valor em R$ informado
+        return `${sinal}R$ ${valorInformado.toFixed(2)}`;
+      }
+    }
+
+    return "R$ 0.00";
   }
 
   calculaMargem(precoVenda: number, custo: number): number {

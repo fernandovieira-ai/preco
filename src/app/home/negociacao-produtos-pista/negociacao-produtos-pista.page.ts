@@ -1078,11 +1078,17 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
     const negociacaoNova: pessoaNegociacao[] = [];
     const dataDeHoje = moment();
     const dataInicioFormatada = moment(this.dataInicio).format("YYYY-MM-DD");
-    const percentualValor = this.valorReais
-      ? "V"
-      : this.valorPercentual
-        ? "P"
-        : null;
+
+    // Determinar se é Valor (V) ou Percentual (P)
+    // Preço Fixo sempre é Valor (V)
+    const percentualValor =
+      this.tipoNegociacao === "fixo"
+        ? "V"
+        : this.valorReais
+          ? "V"
+          : this.valorPercentual
+            ? "P"
+            : "V"; // Default: Valor
 
     const formasSelecionadas = this.movimento.formaPagto
       .filter((row) =>
@@ -1162,7 +1168,13 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
 
         this.tipoPrecoSelecionado.forEach((tp) => {
           const campo = `val_preco_venda_${tp.toLowerCase()}`;
-          negociacao[campo] = valorCalculado;
+          // Para Preço Fixo (P), salva o valor calculado
+          // Para Desconto (D) ou Acréscimo (A), salva o valor informado
+          if (negociacao.ind_tipo_negociacao === "P") {
+            negociacao[campo] = valorCalculado;
+          } else {
+            negociacao[campo] = this.valorReais || this.valorPercentual || 0;
+          }
         });
 
         negociacaoNova.push(negociacao);

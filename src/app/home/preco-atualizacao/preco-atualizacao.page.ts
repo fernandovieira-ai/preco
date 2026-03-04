@@ -28,6 +28,7 @@ interface PrecoEmsys {
   val_preco_venda_d: number;
   val_preco_venda_e: number;
   val_custo_medio: number;
+  val_preco_venda: number; // Preço de venda da tabela tab_custo_preco (base para cálculo)
   cod_condicao_pagamento: number;
   des_observacao: string;
   num_chf: string;
@@ -47,6 +48,7 @@ interface PrecoEmsys {
   val_novo_preco_c?: number;
   val_novo_preco_d?: number;
   val_novo_preco_e?: number;
+  val_valor_informado?: number; // Valor informado pelo usuário (percentual ou valor fixo)
 }
 
 @Component({
@@ -100,7 +102,7 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
   todasSelecionadas = false;
 
   // Controles de alteração em lote
-  tipoCalculo: string = "valor"; // 'valor' ou 'percentual'
+  tipoCalculo: string = "percentual"; // 'valor' ou 'percentual'
   tipoOperacao: string = "fixo"; // 'fixo', 'acrescimo', 'desconto'
   valorAlteracao: number = 0;
   indDiferenciaPrecoUnitario: boolean = false;
@@ -524,15 +526,37 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
   }
 
   // ========== NAVEGAÇÃO DE STEPS ==========
+  onTipoNegociacaoChange() {
+    // Resetar os valores dos filtros quando mudar o tipo de negociação
+    this.precoMenorQue = 0;
+  }
+
   canAdvance(): boolean {
     if (this.currentStep === 1) {
-      return this.empresasSelecionadas.length > 0;
+      // Validar que o Tipo de Negociação foi selecionado
+      const hasTipoNegociacao =
+        this.tipoNegociacao && this.tipoNegociacao.trim() !== "";
+
+      return hasTipoNegociacao;
     }
     return false;
   }
 
+  getMensagemValidacao(): string {
+    if (!this.tipoNegociacao || this.tipoNegociacao.trim() === "") {
+      return "Selecione o Tipo de Negociação";
+    }
+    return "";
+  }
+
   async avancar() {
     if (this.currentStep === 1) {
+      // Validar antes de buscar
+      if (!this.canAdvance()) {
+        this.alert.presentToast(`⚠️ ${this.getMensagemValidacao()}`, 3000);
+        return;
+      }
+
       await this.buscarPrecos();
       this.currentStep = 2;
     }
@@ -848,10 +872,10 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
           cod_condicao_pagamento: preco.cod_condicao_pagamento,
           dta_inicio: preco.dta_inicio,
           dta_inclusao: dataDeHoje.format("YYYY-MM-DD"),
-          ind_tipo_negociacao: "P", // Preço Fixo
-          ind_percentual_valor: "V", // Valor
+          ind_tipo_negociacao: preco.ind_tipo_negociacao || "P",
+          ind_percentual_valor: preco.ind_percentual_valor || "V",
           ind_tipo_preco_base: "A",
-          val_preco_venda_a: preco.val_novo_preco_a,
+          val_preco_venda_a: preco.val_valor_informado || 0,
           val_preco_venda_b: 0,
           val_preco_venda_c: 0,
           val_preco_venda_d: 0,
@@ -889,11 +913,11 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
           cod_condicao_pagamento: preco.cod_condicao_pagamento,
           dta_inicio: preco.dta_inicio,
           dta_inclusao: dataDeHoje.format("YYYY-MM-DD"),
-          ind_tipo_negociacao: "P",
-          ind_percentual_valor: "V",
+          ind_tipo_negociacao: preco.ind_tipo_negociacao || "P",
+          ind_percentual_valor: preco.ind_percentual_valor || "V",
           ind_tipo_preco_base: "B",
           val_preco_venda_a: 0,
-          val_preco_venda_b: preco.val_novo_preco_b,
+          val_preco_venda_b: preco.val_valor_informado || 0,
           val_preco_venda_c: 0,
           val_preco_venda_d: 0,
           val_preco_venda_e: 0,
@@ -930,12 +954,12 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
           cod_condicao_pagamento: preco.cod_condicao_pagamento,
           dta_inicio: preco.dta_inicio,
           dta_inclusao: dataDeHoje.format("YYYY-MM-DD"),
-          ind_tipo_negociacao: "P",
-          ind_percentual_valor: "V",
+          ind_tipo_negociacao: preco.ind_tipo_negociacao || "P",
+          ind_percentual_valor: preco.ind_percentual_valor || "V",
           ind_tipo_preco_base: "C",
           val_preco_venda_a: 0,
           val_preco_venda_b: 0,
-          val_preco_venda_c: preco.val_novo_preco_c,
+          val_preco_venda_c: preco.val_valor_informado || 0,
           val_preco_venda_d: 0,
           val_preco_venda_e: 0,
           val_custo_medio: preco.val_custo_medio,
@@ -971,13 +995,13 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
           cod_condicao_pagamento: preco.cod_condicao_pagamento,
           dta_inicio: preco.dta_inicio,
           dta_inclusao: dataDeHoje.format("YYYY-MM-DD"),
-          ind_tipo_negociacao: "P",
-          ind_percentual_valor: "V",
+          ind_tipo_negociacao: preco.ind_tipo_negociacao || "P",
+          ind_percentual_valor: preco.ind_percentual_valor || "V",
           ind_tipo_preco_base: "D",
           val_preco_venda_a: 0,
           val_preco_venda_b: 0,
           val_preco_venda_c: 0,
-          val_preco_venda_d: preco.val_novo_preco_d,
+          val_preco_venda_d: preco.val_valor_informado || 0,
           val_preco_venda_e: 0,
           val_custo_medio: preco.val_custo_medio,
           cod_pessoa: preco.cod_pessoa || 0,
@@ -1012,14 +1036,14 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
           cod_condicao_pagamento: preco.cod_condicao_pagamento,
           dta_inicio: preco.dta_inicio,
           dta_inclusao: dataDeHoje.format("YYYY-MM-DD"),
-          ind_tipo_negociacao: "P",
-          ind_percentual_valor: "V",
+          ind_tipo_negociacao: preco.ind_tipo_negociacao || "P",
+          ind_percentual_valor: preco.ind_percentual_valor || "V",
           ind_tipo_preco_base: "E",
           val_preco_venda_a: 0,
           val_preco_venda_b: 0,
           val_preco_venda_c: 0,
           val_preco_venda_d: 0,
-          val_preco_venda_e: preco.val_novo_preco_e,
+          val_preco_venda_e: preco.val_valor_informado || 0,
           val_custo_medio: preco.val_custo_medio,
           cod_pessoa: preco.cod_pessoa || 0,
           nom_pessoa: preco.nom_pessoa || "",
@@ -1218,6 +1242,15 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
   }
 
   // ========== ALTERAÇÃO EM LOTE ==========
+  onTipoOperacaoChange() {
+    // Quando mudar para 'fixo', o tipoCalculo não é usado
+    // Quando mudar para 'acrescimo' ou 'desconto', resetar para percentual
+    if (this.tipoOperacao !== "fixo") {
+      this.tipoCalculo = "percentual";
+    }
+    this.valorAlteracao = 0;
+  }
+
   aplicarAlteracoes() {
     if (this.negociacoesSelecionadas.size === 0) {
       this.alert.presentAlert(
@@ -1241,13 +1274,16 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
     this.negociacoesSelecionadas.forEach((index) => {
       const preco = this.precosEncontrados[index];
 
-      // Calcular novo preço A (como exemplo - você pode expandir para B, C, D, E)
-      const precoAtual = preco.val_preco_venda_a || 0;
+      // Usar o preço de venda da tabela tab_custo_preco como base para cálculo
+      const precoAtual = preco.val_preco_venda || 0;
       let novoPreco = precoAtual;
 
       // Atualizar ind_percentual_valor baseado no tipo de cálculo
       preco.ind_percentual_valor =
         this.tipoCalculo === "percentual" ? "P" : "V";
+
+      // Guardar o valor informado pelo usuário
+      preco.val_valor_informado = this.valorAlteracao;
 
       if (this.tipoOperacao === "fixo") {
         novoPreco = this.valorAlteracao;

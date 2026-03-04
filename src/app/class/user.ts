@@ -164,6 +164,7 @@ export class minhasNegociacoesDetalhe {
   margem_valor?: number;
   percentual_alteracao?: number;
   valor_calculado?: number;
+  texto_alteracao?: string;
 }
 
 export class negociacoesExistentes {

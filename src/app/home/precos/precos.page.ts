@@ -177,14 +177,33 @@ export class PrecosPage implements OnInit {
       return;
     }
 
-    // 2ï¸âƒ£ Filtra apenas regras vÃ¡lidas (uma Ãºnica vez)
+    // 2️⃣ Filtra apenas regras válidas (uma única vez)
     const regras = this.negociacaoNova.filter((r) => r.valor_valido);
 
+    // LOG: Verificar valores logo após filtrar as regras
+    console.log("=== APÓS FILTRAR REGRAS VÁLIDAS ===");
+    console.log("Total de regras válidas:", regras.length);
+    regras.slice(0, 3).forEach((regra, index) => {
+      console.log(`Regra ${index + 1} (logo após filtro):`, {
+        ind_tipo_negociacao: regra.ind_tipo_negociacao,
+        ind_percentual_valor: regra.ind_percentual_valor,
+        val_preco_venda_a: regra.val_preco_venda_a,
+        val_preco_venda_b: regra.val_preco_venda_b,
+        valor_calculado: regra.valor_calculado,
+        valor_informado: regra.valor,
+      });
+    });
+
     if (!regras.length) {
-      const regrasInvalidas = this.negociacaoNova.filter((r) => !r.valor_valido);
+      const regrasInvalidas = this.negociacaoNova.filter(
+        (r) => !r.valor_valido,
+      );
       const itensComProblema = regrasInvalidas
-        .map((r) => `• ${r.des_item} (Custo: R$ ${r.val_custo_medio?.toFixed(2) || '0,00'} - Novo Preço: R$ ${r.valor_calculado?.toFixed(2) || '0,00'})`)
-        .join('\n');
+        .map(
+          (r) =>
+            `• ${r.des_item} (Custo: R$ ${r.val_custo_medio?.toFixed(2) || "0,00"} - Novo Preço: R$ ${r.valor_calculado?.toFixed(2) || "0,00"})`,
+        )
+        .join("\n");
 
       this.alert.presentAlert(
         "⚠️ Negociação com Margem Inválida",
@@ -199,13 +218,25 @@ export class PrecosPage implements OnInit {
     if (regrasInvalidas.length > 0) {
       this.alert.presentToast(
         `⚠️ ${regrasInvalidas.length} item(ns) com preço abaixo do custo foram ignorados`,
-        3000
+        3000,
       );
     }
 
     // 3ï¸âƒ£ Loading real (sem timeout fixo)
     await this.showLoading("Enviando dados...", 50000);
-
+    // Log para debug: verificar valores enviados
+    console.log("=== ENVIANDO PARA BACKEND ===");
+    console.log("Total de regras:", regras.length);
+    regras.slice(0, 3).forEach((regra, index) => {
+      console.log(`Regra ${index + 1}:`, {
+        ind_tipo_negociacao: regra.ind_tipo_negociacao,
+        ind_percentual_valor: regra.ind_percentual_valor,
+        val_preco_venda_a: regra.val_preco_venda_a,
+        val_preco_venda_b: regra.val_preco_venda_b,
+        valor_calculado: regra.valor_calculado,
+        valor_informado: regra.valor,
+      });
+    });
     this.movimento
       .novaNegociacao(
         this.auth.userLogado.schema,
@@ -599,7 +630,7 @@ export class PrecosPage implements OnInit {
                 });
               });
 
-              // 3. Aplica regras de preÃ§o
+              // 3. Aplica regras de preço
               this.negociacaoNova.forEach((row) => {
                 this.tipoPreco.forEach((tp) => {
                   row.ind_adicionado = true;
@@ -616,11 +647,33 @@ export class PrecosPage implements OnInit {
                     row,
                     `val_preco_venda_${tp.toLowerCase()}`,
                   );
+
+                  // LOG: Verificar valores APÓS aplicarRegraPreco
+                  console.log(`🔍 APÓS aplicarRegraPreco - Tipo Preço: ${tp}`, {
+                    ind_tipo_negociacao: row.ind_tipo_negociacao,
+                    ind_percentual_valor: row.ind_percentual_valor,
+                    val_preco_venda_a: row.val_preco_venda_a,
+                    val_preco_venda_b: row.val_preco_venda_b,
+                    valor_informado: row.valor,
+                    valor_calculado: row.valor_calculado,
+                    this_valor: this.valor,
+                    this_percentual: this.percentual,
+                  });
+
                   row.valor_valido =
                     row.valor_calculado < row.val_custo_medio ? false : true;
-                  row.margem = this.calculaMargem(row.valor_calculado, row.val_custo_medio);
-                  row.margem_valor = this.calculaMargemValor(row.valor_calculado, row.val_custo_medio);
-                  row.percentual_alteracao = this.calculaPercentualAlteracao(row.val_preco_venda, row.valor_calculado);
+                  row.margem = this.calculaMargem(
+                    row.valor_calculado,
+                    row.val_custo_medio,
+                  );
+                  row.margem_valor = this.calculaMargemValor(
+                    row.valor_calculado,
+                    row.val_custo_medio,
+                  );
+                  row.percentual_alteracao = this.calculaPercentualAlteracao(
+                    row.val_preco_venda,
+                    row.valor_calculado,
+                  );
                 });
               });
             } else {
@@ -662,7 +715,7 @@ export class PrecosPage implements OnInit {
           });
         });
 
-        // 3. Aplica regras de preÃ§o
+        // 3. Aplica regras de preço
         this.negociacaoNova.forEach((row) => {
           if (existentesSet.has(row.cod_item)) return;
           this.tipoPreco.forEach((tp) => {
@@ -677,11 +730,36 @@ export class PrecosPage implements OnInit {
               row.val_preco_venda,
             );
             this.aplicarRegraPreco(row, `val_preco_venda_${tp.toLowerCase()}`);
+
+            // LOG: Verificar valores APÓS aplicarRegraPreco (bloco 2)
+            console.log(
+              `🔍 BLOCO2 APÓS aplicarRegraPreco - Tipo Preço: ${tp}`,
+              {
+                ind_tipo_negociacao: row.ind_tipo_negociacao,
+                ind_percentual_valor: row.ind_percentual_valor,
+                val_preco_venda_a: row.val_preco_venda_a,
+                val_preco_venda_b: row.val_preco_venda_b,
+                valor_informado: row.valor,
+                valor_calculado: row.valor_calculado,
+                this_valor: this.valor,
+                this_percentual: this.percentual,
+              },
+            );
+
             row.valor_valido =
               row.valor_calculado < row.val_custo_medio ? false : true;
-            row.margem = this.calculaMargem(row.valor_calculado, row.val_custo_medio);
-            row.margem_valor = this.calculaMargemValor(row.valor_calculado, row.val_custo_medio);
-            row.percentual_alteracao = this.calculaPercentualAlteracao(row.val_preco_venda, row.valor_calculado);
+            row.margem = this.calculaMargem(
+              row.valor_calculado,
+              row.val_custo_medio,
+            );
+            row.margem_valor = this.calculaMargemValor(
+              row.valor_calculado,
+              row.val_custo_medio,
+            );
+            row.percentual_alteracao = this.calculaPercentualAlteracao(
+              row.val_preco_venda,
+              row.valor_calculado,
+            );
           });
         });
       }
@@ -709,7 +787,32 @@ export class PrecosPage implements OnInit {
 
   aplicarRegraPreco(row: any, campo: string) {
     const tipo = campo.substr(-1);
+
+    // SEMPRE salva o valor informado (não o calculado)
+    // O cálculo (valor_calculado) é apenas para exibição no resumo
+    // ind_tipo_negociacao define se é P (Preço Fixo), A (Acréscimo) ou D (Desconto)
+    // ind_percentual_valor define se é P (Percentual) ou V (Valor)
+
+    console.log(`🔴 ANTES de atribuir - Campo: ${campo}`, {
+      this_valor: this.valor,
+      this_percentual: this.percentual,
+      valor_que_sera_salvo: this.valor > 0 ? this.valor : this.percentual,
+      row_campo_antes: row[campo],
+    });
+
     row[campo] = this.valor > 0 ? this.valor : this.percentual;
+
+    console.log(`🟢 DEPOIS de atribuir - Campo: ${campo}`, {
+      row_campo_depois: row[campo],
+      row_valor_calculado: row.valor_calculado,
+      row_todas_as_props: {
+        val_preco_venda_a: row.val_preco_venda_a,
+        val_preco_venda_b: row.val_preco_venda_b,
+        val_preco_venda_c: row.val_preco_venda_c,
+        val_preco_venda_d: row.val_preco_venda_d,
+        val_preco_venda_e: row.val_preco_venda_e,
+      },
+    });
   }
 
   calculaValor(tipo, valor, percentual, valorVenda) {
