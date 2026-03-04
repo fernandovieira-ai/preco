@@ -785,7 +785,7 @@ export class MovimentoService {
     };
 
     return this.httpClient
-      .post<any>(`${this.baseURL}/atualizarPrecosEmsys`, body)
+      .post<any>(`${this.baseURL}/atualizarPrecosEmsys`, body, httpOptions)
       .pipe(
         take(1),
         catchError((err) => {
