@@ -103,7 +103,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    console.log("NegociacaoCombustivelPage initialized");
 
     // PROTEÇÃO: Verificar se dados estão disponíveis
     if (!this.dataLoad || !this.dataLoad.pessoa) {
@@ -151,11 +150,9 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         this.movimento.formaPagto = data.formaPagto || [];
         this.movimento.tipoFormaPagto = data.tipoFormaPagto || [];
 
-        console.log(
           "DEBUG - Estrutura dos combustíveis:",
           this.combustiveisDisponiveis.slice(0, 2),
         );
-        console.log(
           "DEBUG - Formas de pagamento carregadas:",
           this.movimento.formaPagto.length,
         );
@@ -166,8 +163,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         console.error("Nenhum cliente carregado");
         this.clientesFiltrados = [];
       }
-      console.log("Clientes disponíveis:", this.dataLoad.pessoa?.length || 0);
-      console.log(
         "Combustíveis carregados:",
         this.combustiveisDisponiveis.length,
       );
@@ -187,12 +182,9 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         return nomeA.localeCompare(nomeB);
       });
 
-      console.log("✓ Clientes: Aguardando filtro do usuário");
-      console.log(
         "✓ Combustíveis disponíveis:",
         this.combustiveisFiltrados.length,
       );
-      console.log(
         "✓ Formas de pagamento carregadas:",
         this.formaPagtoFiltrada.length,
       );
@@ -226,9 +218,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
       // Debug ao avançar para step 3 (negociação)
       if (this.currentStep === 3) {
-        console.log("=== STEP 3: Combustíveis Selecionados ===");
-        console.log("Total:", this.combustiveisSelecionados.length);
-        console.log("Dados:", this.combustiveisSelecionados.slice(0, 2));
       }
     } else if (this.currentStep === this.totalSteps) {
       this.enviarNegociacao();
@@ -284,7 +273,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       !this.dataLoad.pessoa ||
       !Array.isArray(this.dataLoad.pessoa)
     ) {
-      console.warn("Dados de clientes não disponíveis");
       this.clientesFiltrados = [];
       return;
     }
@@ -295,7 +283,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     const temFiltroData = this.dataCadastroInicial || this.dataCadastroFinal;
 
     if (!temFiltroTexto && !temFiltroData) {
-      console.log(
         "Nenhum filtro aplicado. Use a busca (mín. 3 caracteres) ou filtro de data.",
       );
       this.clientesFiltrados = [];
@@ -303,7 +290,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     }
 
     let clientes = [...this.dataLoad.pessoa];
-    console.log("Total de clientes disponíveis:", clientes.length);
 
     // Filtro de busca por texto
     if (this.clientesBusca && this.clientesBusca.trim()) {
@@ -314,14 +300,10 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           c.num_cnpj_cpf?.includes(busca) ||
           c.cod_pessoa?.toString().includes(busca),
       );
-      console.log(`Após filtro texto: ${clientes.length} clientes`);
     }
 
     // Filtro por data de cadastro
     if (this.dataCadastroInicial || this.dataCadastroFinal) {
-      console.log("=== FILTRO DE DATA ===");
-      console.log("Data Inicial:", this.dataCadastroInicial);
-      console.log("Data Final:", this.dataCadastroFinal);
 
       const totalAntes = clientes.length;
       let exemplosIncluidos = 0;
@@ -337,7 +319,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
         // Se a data é inválida, não inclui
         if (!dataCadastro.isValid()) {
-          console.warn(
             `Data inválida para cliente ${c.cod_pessoa}:`,
             c.dta_cadastro,
           );
@@ -354,7 +335,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           incluir = dataCadastro.isBetween(dataInicio, dataFim, null, "[]");
 
           if (incluir && exemplosIncluidos < 3) {
-            console.log(
               `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} está entre ${dataInicio.format("DD/MM/YYYY")} e ${dataFim.format("DD/MM/YYYY")}`,
             );
             exemplosIncluidos++;
@@ -366,7 +346,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           incluir = dataCadastro.isSameOrAfter(dataInicio);
 
           if (incluir && exemplosIncluidos < 3) {
-            console.log(
               `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} >= ${dataInicio.format("DD/MM/YYYY")}`,
             );
             exemplosIncluidos++;
@@ -378,7 +357,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           incluir = dataCadastro.isSameOrBefore(dataFim);
 
           if (incluir && exemplosIncluidos < 3) {
-            console.log(
               `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} <= ${dataFim.format("DD/MM/YYYY")}`,
             );
             exemplosIncluidos++;
@@ -388,7 +366,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         return incluir;
       });
 
-      console.log(
         `Após filtro data: ${clientes.length} de ${totalAntes} clientes`,
       );
     }
@@ -404,7 +381,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     const totalClientes = clientes.length;
     this.clientesFiltrados = clientes.slice(0, 500);
 
-    console.log(
       `✓ Resultado final: ${this.clientesFiltrados.length} clientes (ordenados alfabeticamente)`,
     );
 
@@ -470,7 +446,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       );
     }
 
-    console.log("Combustíveis filtrados:", combustiveis.length);
     this.combustiveisFiltrados = combustiveis;
     this.groupedCombustiveis = this.groupCombustiveisByCodEmpresa(combustiveis);
   }
@@ -588,7 +563,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       const input = evento.target as HTMLInputElement;
       input.value = precoFormatado.toFixed(2);
 
-      console.log(
         `Preço fixo formatado: Item ${cod_item} = R$ ${precoFormatado.toFixed(2)}`,
       );
     }
@@ -635,7 +609,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         return nomeA.localeCompare(nomeB);
       });
       this.tiposSelecionadosFiltro = []; // Limpar filtro de tipos
-      console.log(
         "Modal aberto - Formas disponíveis:",
         this.formaPagtoFiltrada.length,
       );
@@ -708,7 +681,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = true;
     });
-    console.log(
       "Selecionadas todas as formas visíveis:",
       this.formaPagtoFiltrada.length,
     );
@@ -719,7 +691,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = false;
     });
-    console.log("Desmarcadas todas as formas visíveis");
   }
 
   marcarFormasPagto(ev: any) {
@@ -745,7 +716,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       return nomeA.localeCompare(nomeB);
     });
 
-    console.log(
       `Filtrado por tipo: ${this.formaPagtoFiltrada.length} formas disponíveis`,
     );
   }

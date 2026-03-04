@@ -19,7 +19,6 @@ export class MovimentoService {
   }
 
   set pessoasSelecionadas(value: pessoa[]) {
-    console.log("✏️ SET pessoasSelecionadas:", value?.length || 0, "items");
     console.trace("Stack trace:");
     this._pessoasSelecionadas = value;
   }
@@ -234,10 +233,7 @@ export class MovimentoService {
     const token = window.localStorage.getItem("token");
 
     // LOG CRÍTICO: Verificar dados antes de enviar ao backend
-    console.log("=== SERVIÇO novaNegociacao - DADOS ANTES DO POST ===");
-    console.log("Total de itens:", itens.length);
     itens.slice(0, 3).forEach((item, idx) => {
-      console.log(`Item ${idx + 1}:`, {
         ind_tipo_negociacao: item.ind_tipo_negociacao,
         ind_percentual_valor: item.ind_percentual_valor,
         ind_tipo_preco_base: item.ind_tipo_preco_base,
@@ -630,27 +626,9 @@ export class MovimentoService {
     const token = window.localStorage.getItem("token");
     const body = { schema_base, param1, param2, param3, param4 };
 
-    console.log("===== MovimentoService.sincronizaCadastros =====");
-    console.log("URL completa:", `${this.baseURL}/sincronizaCadastros`);
-    console.log("Método:", "POST");
-    console.log("---");
-    console.log("Body enviado:");
-    console.log(JSON.stringify(body, null, 2));
-    console.log("---");
-    console.log("Headers:");
-    console.log("  Content-Type: application/json");
-    console.log(
       "  Authorization:",
       token ? "Token presente ✓" : "Token ausente ✗",
     );
-    console.log("---");
-    console.log("Tipos dos parâmetros:");
-    console.log("  schema_base:", typeof schema_base, "=", schema_base);
-    console.log("  param1:", typeof param1, "=", param1);
-    console.log("  param2:", typeof param2, "=", param2);
-    console.log("  param3:", typeof param3, "=", param3);
-    console.log("  param4:", typeof param4, "=", param4);
-    console.log("===== Enviando requisição HTTP =====");
 
     const httpOptions = {
       headers: new HttpHeaders({
@@ -682,11 +660,9 @@ export class MovimentoService {
     const token = window.localStorage.getItem("token");
     const body = { schema_base };
 
-    console.log(
       "MovimentoService.atualizaUsuarios - Enviando para backend:",
       body,
     );
-    console.log("URL:", `${this.baseURL}/atualizaUsuarios`);
 
     const httpOptions = {
       headers: new HttpHeaders({

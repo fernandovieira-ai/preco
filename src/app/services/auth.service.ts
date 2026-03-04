@@ -54,13 +54,10 @@ export class AuthService {
 
   checkPlatform() {
     if (this.platform.is("android")) {
-      console.log("Está sendo executado em um dispositivo Android");
       this.isAndroid = true;
     } else if (this.platform.is("ios")) {
-      console.log("Está sendo executado em um dispositivo iOS");
       this.isIOS = true;
     } else {
-      console.log("Não está sendo executado em um dispositivo Android ou iOS");
       // Caso não esteja em nenhuma das plataformas desejadas
     }
   }
@@ -79,7 +76,6 @@ export class AuthService {
 
   destroyToken(): void {
     try {
-      console.log("DestroyToken executado - Limpando sessão");
 
       // Verifica se deve manter credenciais salvas
       const lembrarSenha = localStorage.getItem("lembrarSenha");
@@ -89,7 +85,6 @@ export class AuthService {
 
       keysToRemove.forEach((key) => {
         localStorage.removeItem(key);
-        console.log(`Removido: ${key}`);
       });
 
       // Se NÃO estava marcado "lembrar-me", limpa as credenciais também
@@ -97,9 +92,7 @@ export class AuthService {
         localStorage.removeItem("lembrarSenha");
         localStorage.removeItem("usuarioSalvo");
         localStorage.removeItem("senhaSalva");
-        console.log("Credenciais removidas (lembrar-me não estava marcado)");
       } else {
-        console.log("Credenciais preservadas (lembrar-me está marcado)");
       }
 
       // Disconecta socket
@@ -128,7 +121,6 @@ export class AuthService {
   // Atualiza cadastro de clientes em background após login
   atualizarCadastroClientes(schema: string): void {
     if (!schema) {
-      console.warn("Schema não fornecido para atualização de cadastro");
       return;
     }
 
@@ -155,7 +147,6 @@ export class AuthService {
       )
       .subscribe({
         next: (response) => {
-          console.log("Cadastro de clientes atualizado com sucesso:", response);
         },
         error: (err) => {
           console.error("Falha ao atualizar cadastro (não afeta login):", err);

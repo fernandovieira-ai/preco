@@ -160,7 +160,6 @@ export class PrecosPage implements OnInit {
     this.percentual = null;
     this.valCusto = null;
 
-    console.log("NegociaÃ§Ãµes limpas ao sair da pÃ¡gina de preÃ§os");
   }
 
   async enviarTroca() {
@@ -181,10 +180,7 @@ export class PrecosPage implements OnInit {
     const regras = this.negociacaoNova.filter((r) => r.valor_valido);
 
     // LOG: Verificar valores logo após filtrar as regras
-    console.log("=== APÓS FILTRAR REGRAS VÁLIDAS ===");
-    console.log("Total de regras válidas:", regras.length);
     regras.slice(0, 3).forEach((regra, index) => {
-      console.log(`Regra ${index + 1} (logo após filtro):`, {
         ind_tipo_negociacao: regra.ind_tipo_negociacao,
         ind_percentual_valor: regra.ind_percentual_valor,
         val_preco_venda_a: regra.val_preco_venda_a,
@@ -225,10 +221,7 @@ export class PrecosPage implements OnInit {
     // 3ï¸âƒ£ Loading real (sem timeout fixo)
     await this.showLoading("Enviando dados...", 50000);
     // Log para debug: verificar valores enviados
-    console.log("=== ENVIANDO PARA BACKEND ===");
-    console.log("Total de regras:", regras.length);
     regras.slice(0, 3).forEach((regra, index) => {
-      console.log(`Regra ${index + 1}:`, {
         ind_tipo_negociacao: regra.ind_tipo_negociacao,
         ind_percentual_valor: regra.ind_percentual_valor,
         val_preco_venda_a: regra.val_preco_venda_a,
@@ -418,7 +411,6 @@ export class PrecosPage implements OnInit {
       this.codigosItem.splice(index, 1);
     }
 
-    console.log(this.codigosItem, "codigosItem fa funnÃ§Ã£o setItem");
   }
 
   marcarItens(ev) {
@@ -515,7 +507,6 @@ export class PrecosPage implements OnInit {
       }
     });
 
-    console.log(
       this.movimento.formaPagto.filter((row) => row.ind_selecionado === true),
       "formaPagto na funÃ§Ã£o addFormaPagto",
     );
@@ -649,7 +640,6 @@ export class PrecosPage implements OnInit {
                   );
 
                   // LOG: Verificar valores APÓS aplicarRegraPreco
-                  console.log(`🔍 APÓS aplicarRegraPreco - Tipo Preço: ${tp}`, {
                     ind_tipo_negociacao: row.ind_tipo_negociacao,
                     ind_percentual_valor: row.ind_percentual_valor,
                     val_preco_venda_a: row.val_preco_venda_a,
@@ -732,7 +722,6 @@ export class PrecosPage implements OnInit {
             this.aplicarRegraPreco(row, `val_preco_venda_${tp.toLowerCase()}`);
 
             // LOG: Verificar valores APÓS aplicarRegraPreco (bloco 2)
-            console.log(
               `🔍 BLOCO2 APÓS aplicarRegraPreco - Tipo Preço: ${tp}`,
               {
                 ind_tipo_negociacao: row.ind_tipo_negociacao,
@@ -771,7 +760,6 @@ export class PrecosPage implements OnInit {
     }
 
     this.agruparPorDesItem(this.negociacaoNova);
-    console.log(this.agruparPorDesItem(this.negociacaoNova));
   }
 
   verificarPresencaItem(negociacaoNova, codigosItem, formasSelecionadas) {
@@ -793,7 +781,6 @@ export class PrecosPage implements OnInit {
     // ind_tipo_negociacao define se é P (Preço Fixo), A (Acréscimo) ou D (Desconto)
     // ind_percentual_valor define se é P (Percentual) ou V (Valor)
 
-    console.log(`🔴 ANTES de atribuir - Campo: ${campo}`, {
       this_valor: this.valor,
       this_percentual: this.percentual,
       valor_que_sera_salvo: this.valor > 0 ? this.valor : this.percentual,
@@ -802,7 +789,6 @@ export class PrecosPage implements OnInit {
 
     row[campo] = this.valor > 0 ? this.valor : this.percentual;
 
-    console.log(`🟢 DEPOIS de atribuir - Campo: ${campo}`, {
       row_campo_depois: row[campo],
       row_valor_calculado: row.valor_calculado,
       row_todas_as_props: {
