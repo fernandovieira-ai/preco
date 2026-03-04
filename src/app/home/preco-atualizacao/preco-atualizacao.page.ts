@@ -735,6 +735,25 @@ export class PrecoAtualizacaoPage implements OnInit, OnDestroy {
     return ((precoNovo - precoAtual) / precoAtual) * 100;
   }
 
+  // Retorna o preço anterior baseado no tipo de preço
+  getPrecoAnterior(preco: PrecoEmsys): number {
+    const tipoPreco = preco.ind_tipo_preco_base || "A";
+    switch (tipoPreco) {
+      case "A":
+        return preco.val_preco_venda_a || preco.val_preco_venda || 0;
+      case "B":
+        return preco.val_preco_venda_b || preco.val_preco_venda || 0;
+      case "C":
+        return preco.val_preco_venda_c || preco.val_preco_venda || 0;
+      case "D":
+        return preco.val_preco_venda_d || preco.val_preco_venda || 0;
+      case "E":
+        return preco.val_preco_venda_e || preco.val_preco_venda || 0;
+      default:
+        return preco.val_preco_venda || 0;
+    }
+  }
+
   async salvarAlteracoes() {
     // Filtrar preços que tiveram alteração
     const precosAlterados = this.precosEncontrados.filter(

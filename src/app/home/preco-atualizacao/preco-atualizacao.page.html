@@ -461,7 +461,7 @@
                     <td>{{getNomeEmpresa(preco.cod_empresa)}}</td>
                     <td>{{preco.nom_pessoa || '-'}}</td>
                     <td>{{preco.des_item || 'Código: ' + preco.cod_item}}</td>
-                    <td>{{preco.val_preco_venda | number: '1.2-2'}}</td>
+                    <td>{{getPrecoAnterior(preco) | number: '1.2-2'}}</td>
                     <td>{{preco.val_novo_preco_a | number: '1.2-2'}}</td>
                     <td>
                       {{preco.dta_inicio ? (preco.dta_inicio | date:
