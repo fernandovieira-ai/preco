@@ -231,19 +231,6 @@ export class MovimentoService {
     itens,
   ): Observable<any> {
     const token = window.localStorage.getItem("token");
-
-    // LOG CRÍTICO: Verificar dados antes de enviar ao backend
-    itens.slice(0, 3).forEach((item, idx) => {
-        ind_tipo_negociacao: item.ind_tipo_negociacao,
-        ind_percentual_valor: item.ind_percentual_valor,
-        ind_tipo_preco_base: item.ind_tipo_preco_base,
-        val_preco_venda_a: item.val_preco_venda_a,
-        val_preco_venda_b: item.val_preco_venda_b,
-        valor_calculado: item.valor_calculado,
-        valor: item.valor,
-      });
-    });
-
     const body = {
       schema,
       cod_empresa,
@@ -626,10 +613,6 @@ export class MovimentoService {
     const token = window.localStorage.getItem("token");
     const body = { schema_base, param1, param2, param3, param4 };
 
-      "  Authorization:",
-      token ? "Token presente ✓" : "Token ausente ✗",
-    );
-
     const httpOptions = {
       headers: new HttpHeaders({
         "Content-Type": "application/json",
@@ -659,10 +642,6 @@ export class MovimentoService {
   atualizaUsuarios(schema_base): Observable<any> {
     const token = window.localStorage.getItem("token");
     const body = { schema_base };
-
-      "MovimentoService.atualizaUsuarios - Enviando para backend:",
-      body,
-    );
 
     const httpOptions = {
       headers: new HttpHeaders({
@@ -785,7 +764,7 @@ export class MovimentoService {
     };
 
     return this.httpClient
-      .post<any>(`${this.baseURL}/atualizarPrecosEmsys`, body, httpOptions)
+      .post<any>(`${this.baseURL}/atualizarPrecosEmsys`, body)
       .pipe(
         take(1),
         catchError((err) => {
