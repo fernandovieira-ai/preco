@@ -64,6 +64,8 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
   tipoNegociacao: "desconto" | "acrescimo" | "fixo" | null = null;
   valorReais: number | null = null;
   valorPercentual: number | null = null;
+  valorReaisStr: string = '';
+  valorPercentualStr: string = '';
   precosFixosPorItem: Map<number, number> = new Map();
   tipoPrecoSelecionado: string[] = [];
   formasPagamentoSelecionadas: string[] = [];
@@ -875,20 +877,28 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
     if (tipo === "fixo") {
       this.valorReais = null;
       this.valorPercentual = null;
+      this.valorReaisStr = '';
+      this.valorPercentualStr = '';
     } else {
       this.limparPrecosFixos();
     }
   }
 
   onValorReaisChange() {
+    const num = parseFloat(this.valorReaisStr.replace(',', '.'));
+    this.valorReais = !isNaN(num) && num > 0 ? num : null;
     if (this.valorReais && this.valorReais > 0) {
       this.valorPercentual = null;
+      this.valorPercentualStr = '';
     }
   }
 
   onValorPercentualChange() {
+    const num = parseFloat(this.valorPercentualStr.replace(',', '.'));
+    this.valorPercentual = !isNaN(num) && num > 0 ? num : null;
     if (this.valorPercentual && this.valorPercentual > 0) {
       this.valorReais = null;
+      this.valorReaisStr = '';
     }
   }
 
@@ -1268,6 +1278,8 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
     this.tipoNegociacao = null;
     this.valorReais = null;
     this.valorPercentual = null;
+    this.valorReaisStr = '';
+    this.valorPercentualStr = '';
   }
 
   // ========== MÉTODOS DE CÁLCULO ==========

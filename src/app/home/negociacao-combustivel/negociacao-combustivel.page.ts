@@ -53,6 +53,8 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   tipoNegociacao: "desconto" | "acrescimo" | "fixo" | null = null;
   valorReais: number | null = null;
   valorPercentual: number | null = null;
+  valorReaisStr: string = '';
+  valorPercentualStr: string = '';
   precosFixosPorItem: Map<number, number> = new Map(); // cod_item -> preço fixo
   tipoPrecoSelecionado: string[] = [];
   formasPagamentoSelecionadas: string[] = [];
@@ -538,9 +540,11 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
     // Limpar valores ao trocar de tipo
     if (tipo === "fixo") {
-      // Ao selecionar pre\u00e7o fixo, limpar valores de desconto/acr\u00e9scimo
+      // Ao selecionar preço fixo, limpar valores de desconto/acréscimo
       this.valorReais = null;
       this.valorPercentual = null;
+      this.valorReaisStr = '';
+      this.valorPercentualStr = '';
     } else {
       // Ao selecionar desconto/acr\u00e9scimo, limpar pre\u00e7os fixos
       this.limparPrecosFixos();
@@ -548,14 +552,20 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   }
 
   onValorReaisChange() {
+    const num = parseFloat(this.valorReaisStr.replace(',', '.'));
+    this.valorReais = !isNaN(num) && num > 0 ? num : null;
     if (this.valorReais && this.valorReais > 0) {
       this.valorPercentual = null;
+      this.valorPercentualStr = '';
     }
   }
 
   onValorPercentualChange() {
+    const num = parseFloat(this.valorPercentualStr.replace(',', '.'));
+    this.valorPercentual = !isNaN(num) && num > 0 ? num : null;
     if (this.valorPercentual && this.valorPercentual > 0) {
       this.valorReais = null;
+      this.valorReaisStr = '';
     }
   }
   // ========== PREÇOS FIXOS POR ITEM ==========
@@ -994,6 +1004,8 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     this.tipoNegociacao = null;
     this.valorReais = null;
     this.valorPercentual = null;
+    this.valorReaisStr = '';
+    this.valorPercentualStr = '';
   }
 
   // ========== MÉTODOS DE CÁLCULO ==========
