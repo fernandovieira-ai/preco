@@ -714,22 +714,22 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   }
 
   selecionarTodasFormas() {
-    // Seleciona todas as formas visíveis na lista filtrada
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = true;
+      if (!this.formasPagamentoSelecionadas.includes(forma.cod_forma_pagto.toString())) {
+        this.formasPagamentoSelecionadas.push(forma.cod_forma_pagto.toString());
+      }
     });
-    console.log(
-      "Selecionadas todas as formas visíveis:",
-      this.formaPagtoFiltrada.length,
-    );
   }
 
   desmarcarTodasFormas() {
-    // Desmarca todas as formas visíveis na lista filtrada
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = false;
+      const index = this.formasPagamentoSelecionadas.indexOf(forma.cod_forma_pagto.toString());
+      if (index >= 0) {
+        this.formasPagamentoSelecionadas.splice(index, 1);
+      }
     });
-    console.log("Desmarcadas todas as formas visíveis");
   }
 
   marcarFormasPagto(ev: any) {

@@ -1030,12 +1030,19 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
   selecionarTodasFormas() {
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = true;
+      if (!this.formasPagamentoSelecionadas.includes(forma.cod_forma_pagto.toString())) {
+        this.formasPagamentoSelecionadas.push(forma.cod_forma_pagto.toString());
+      }
     });
   }
 
   desmarcarTodasFormas() {
     this.formaPagtoFiltrada.forEach((forma) => {
       forma.ind_selecionado = false;
+      const index = this.formasPagamentoSelecionadas.indexOf(forma.cod_forma_pagto.toString());
+      if (index >= 0) {
+        this.formasPagamentoSelecionadas.splice(index, 1);
+      }
     });
   }
 
