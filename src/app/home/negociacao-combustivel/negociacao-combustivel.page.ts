@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from "@angular/core";
 import { Router } from "@angular/router";
 import { LoadingController } from "@ionic/angular";
-import { Subject } from "rxjs";
+import { Subject, firstValueFrom } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { Alert } from "src/app/class/alert";
 import { AuthService } from "src/app/services/auth.service";
@@ -31,6 +31,7 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   clientesSelecionados: any[] = [];
   clientesFiltrados: any[] = []; // Cache da lista filtrada
   private clientesSelecionadosSet = new Set<number>(); // O(1) lookup!
+  clientesBuscaRealizada = false; // Controla se usuário já buscou
 
   // Step 2: Combustíveis
   combustiveisBusca = "";
@@ -105,8 +106,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    console.log("NegociacaoCombustivelPage initialized");
-
     // PROTEÇÃO: Verificar se dados estão disponíveis
     if (!this.dataLoad || !this.dataLoad.pessoa) {
       console.error("DataLoad não inicializado. Redirecionando...");
@@ -152,15 +151,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         // Carregar formas de pagamento do backend
         this.movimento.formaPagto = data.formaPagto || [];
         this.movimento.tipoFormaPagto = data.tipoFormaPagto || [];
-
-        console.log(
-          "DEBUG - Estrutura dos combustíveis:",
-          this.combustiveisDisponiveis.slice(0, 2),
-        );
-        console.log(
-          "DEBUG - Formas de pagamento carregadas:",
-          this.movimento.formaPagto.length,
-        );
       }
 
       // Verificar novamente após carregamento
@@ -168,11 +158,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         console.error("Nenhum cliente carregado");
         this.clientesFiltrados = [];
       }
-      console.log("Clientes disponíveis:", this.dataLoad.pessoa?.length || 0);
-      console.log(
-        "Combustíveis carregados:",
-        this.combustiveisDisponiveis.length,
-      );
 
       // COMBUSTÍVEIS: Carregar todos automaticamente para mostrar no step 2
       this.filtrarCombustiveis();
@@ -188,16 +173,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         const nomeB = (b.des_forma_pagto || "").toLowerCase();
         return nomeA.localeCompare(nomeB);
       });
-
-      console.log("✓ Clientes: Aguardando filtro do usuário");
-      console.log(
-        "✓ Combustíveis disponíveis:",
-        this.combustiveisFiltrados.length,
-      );
-      console.log(
-        "✓ Formas de pagamento carregadas:",
-        this.formaPagtoFiltrada.length,
-      );
 
       await loading.dismiss();
 
@@ -220,18 +195,70 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
   // ========== NAVEGAÇÃO ENTRE STEPS ==========
 
-  goNext() {
+  async goNext() {
     if (!this.canAdvance()) return;
+
+    // Se está avançando do step 2 (Combustível) para o step 3 (Negociação)
+    // executa a stored procedure para atualizar custos e preços
+    if (this.currentStep === 2) {
+      const loading = await this.loadingCtrl.create({
+        message: "Atualizando custos e preços...",
+        duration: 30000,
+      });
+      await loading.present();
+
+      try {
+        // 1. Executar a procedure para atualizar custos/preços na tabela
+        await firstValueFrom(
+          this.movimento.atualizaCustoPrecoPorItens(
+            this.auth.userLogado.schema,
+            this.auth.userLogado.cod_empresa_sel,
+            this.combustiveisSelecionados,
+          ),
+        );
+
+        // 2. Buscar APENAS os custos/preços atualizados (sem recarregar todos os itens)
+        const dataCustos = await firstValueFrom(
+          this.movimento.buscaCustoPrecoItens(
+            this.auth.userLogado.schema,
+            this.auth.userLogado.cod_empresa_sel,
+            this.combustiveisSelecionados,
+          ),
+        );
+
+        // 3. Atualizar apenas os campos de custo/preço nos itens selecionados
+        const custosMap = new Map(
+          dataCustos.custosPrecos.map((c: any) => [c.cod_item, c]),
+        );
+
+        this.combustiveisSelecionados = this.combustiveisSelecionados.map(
+          (item) => {
+            const custoAtualizado: any = custosMap.get(item.cod_item);
+            if (custoAtualizado) {
+              return {
+                ...item,
+                val_preco_venda: custoAtualizado.val_preco_venda,
+                val_custo_medio: custoAtualizado.val_custo_medio,
+              };
+            }
+            return item;
+          },
+        );
+
+        await loading.dismiss();
+      } catch (error) {
+        console.error("Erro ao atualizar custos/preços:", error);
+        await loading.dismiss();
+        this.alert.presentToast(
+          "Erro ao atualizar custos e preços. Tente novamente.",
+          3000,
+        );
+        return; // Não avança se houver erro
+      }
+    }
 
     if (this.currentStep < this.totalSteps) {
       this.currentStep++;
-
-      // Debug ao avançar para step 3 (negociação)
-      if (this.currentStep === 3) {
-        console.log("=== STEP 3: Combustíveis Selecionados ===");
-        console.log("Total:", this.combustiveisSelecionados.length);
-        console.log("Dados:", this.combustiveisSelecionados.slice(0, 2));
-      }
     } else if (this.currentStep === this.totalSteps) {
       this.enviarNegociacao();
     }
@@ -297,16 +324,11 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     const temFiltroData = this.dataCadastroInicial || this.dataCadastroFinal;
 
     if (!temFiltroTexto && !temFiltroData) {
-      console.log(
-        "Nenhum filtro aplicado. Use a busca (mín. 3 caracteres) ou filtro de data.",
-      );
       this.clientesFiltrados = [];
       return;
     }
 
     let clientes = [...this.dataLoad.pessoa];
-    console.log("Total de clientes disponíveis:", clientes.length);
-
     // Filtro de busca por texto
     if (this.clientesBusca && this.clientesBusca.trim()) {
       const busca = this.clientesBusca.toLowerCase().trim();
@@ -316,17 +338,10 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           c.num_cnpj_cpf?.includes(busca) ||
           c.cod_pessoa?.toString().includes(busca),
       );
-      console.log(`Após filtro texto: ${clientes.length} clientes`);
     }
 
     // Filtro por data de cadastro
     if (this.dataCadastroInicial || this.dataCadastroFinal) {
-      console.log("=== FILTRO DE DATA ===");
-      console.log("Data Inicial:", this.dataCadastroInicial);
-      console.log("Data Final:", this.dataCadastroFinal);
-
-      const totalAntes = clientes.length;
-      let exemplosIncluidos = 0;
 
       clientes = clientes.filter((c) => {
         // Se não tem data de cadastro, não inclui no resultado
@@ -354,45 +369,20 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           const dataFim = moment(this.dataCadastroFinal).endOf("day");
 
           incluir = dataCadastro.isBetween(dataInicio, dataFim, null, "[]");
-
-          if (incluir && exemplosIncluidos < 3) {
-            console.log(
-              `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} está entre ${dataInicio.format("DD/MM/YYYY")} e ${dataFim.format("DD/MM/YYYY")}`,
-            );
-            exemplosIncluidos++;
-          }
         }
         // Filtro apenas com data inicial
         else if (this.dataCadastroInicial) {
           const dataInicio = moment(this.dataCadastroInicial).startOf("day");
           incluir = dataCadastro.isSameOrAfter(dataInicio);
-
-          if (incluir && exemplosIncluidos < 3) {
-            console.log(
-              `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} >= ${dataInicio.format("DD/MM/YYYY")}`,
-            );
-            exemplosIncluidos++;
-          }
         }
         // Filtro apenas com data final
         else if (this.dataCadastroFinal) {
           const dataFim = moment(this.dataCadastroFinal).endOf("day");
           incluir = dataCadastro.isSameOrBefore(dataFim);
-
-          if (incluir && exemplosIncluidos < 3) {
-            console.log(
-              `✓ Cliente ${c.nom_pessoa} - Data: ${dataCadastro.format("DD/MM/YYYY")} <= ${dataFim.format("DD/MM/YYYY")}`,
-            );
-            exemplosIncluidos++;
-          }
         }
 
         return incluir;
       });
-
-      console.log(
-        `Após filtro data: ${clientes.length} de ${totalAntes} clientes`,
-      );
     }
 
     // ORDENAÇÃO: Ordenar clientes alfabeticamente por nome
@@ -406,18 +396,8 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     const totalClientes = clientes.length;
     this.clientesFiltrados = clientes.slice(0, 500);
 
-    console.log(
-      `✓ Resultado final: ${this.clientesFiltrados.length} clientes (ordenados alfabeticamente)`,
-    );
-
-    // Removido: Toast de aviso quando há muitos resultados
-    // Para melhorar UX, não mostrar alertas durante filtragem
-    if (totalClientes === 0) {
-      this.alert.presentToast(
-        "Nenhum cliente encontrado com os filtros aplicados",
-        3000,
-      );
-    }
+    // Marcar que uma busca foi realizada
+    this.clientesBuscaRealizada = true;
   }
 
   toggleCliente(cliente: any) {
@@ -472,7 +452,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       );
     }
 
-    console.log("Combustíveis filtrados:", combustiveis.length);
     this.combustiveisFiltrados = combustiveis;
     this.groupedCombustiveis = this.groupCombustiveisByCodEmpresa(combustiveis);
   }
@@ -597,10 +576,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
       const input = evento.target as HTMLInputElement;
       input.value = precoFormatado.toFixed(2);
-
-      console.log(
-        `Preço fixo formatado: Item ${cod_item} = R$ ${precoFormatado.toFixed(2)}`,
-      );
     }
   }
 
@@ -645,10 +620,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         return nomeA.localeCompare(nomeB);
       });
       this.tiposSelecionadosFiltro = []; // Limpar filtro de tipos
-      console.log(
-        "Modal aberto - Formas disponíveis:",
-        this.formaPagtoFiltrada.length,
-      );
     }
   }
 
@@ -754,10 +725,6 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       const nomeB = (b.des_forma_pagto || "").toLowerCase();
       return nomeA.localeCompare(nomeB);
     });
-
-    console.log(
-      `Filtrado por tipo: ${this.formaPagtoFiltrada.length} formas disponíveis`,
-    );
   }
 
   calcularDuracao(): number {

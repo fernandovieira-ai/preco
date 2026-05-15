@@ -14,7 +14,13 @@ export class WebsocketService {
 
   constructor() { }
 
-  private readonly baseURLSocketIo = environment["endPointSocket"];
+  private get baseURLSocketIo(): string {
+    if (environment.production) {
+      return environment['endPointSocket'];
+    }
+    const hostname = window.location.hostname;
+    return `http://${hostname}:3000`;
+  }
 
   private tarefasSubject = new ReplaySubject<any>(1);
 

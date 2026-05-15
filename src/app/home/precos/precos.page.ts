@@ -8,7 +8,7 @@ import { Component, OnInit, ViewChild } from "@angular/core";
 import { Router } from "@angular/router";
 import { IonAccordionGroup, LoadingController } from "@ionic/angular";
 import * as moment from "moment";
-import { timeout, tap, finalize, catchError, switchMap, EMPTY, of } from "rxjs";
+import { timeout, tap, finalize, catchError, switchMap, EMPTY, of, firstValueFrom } from "rxjs";
 import { Alert } from "src/app/class/alert";
 import { item } from "src/app/class/user";
 import { AuthService } from "src/app/services/auth.service";
@@ -518,7 +518,7 @@ export class PrecosPage implements OnInit {
     );
   }
 
-  aplicarRegra() {
+  async aplicarRegra() {
     const nativeEl = this.accordionGroup;
     nativeEl.value = undefined;
 
@@ -535,6 +535,68 @@ export class PrecosPage implements OnInit {
         this.movimento.formaPagto,
       )
     ) {
+      // Atualizar custos/preços antes de aplicar a regra
+      console.log("🔄 Iniciando atualização de custos/preços...");
+      console.log("Schema:", this.auth.userLogado.schema);
+      console.log("Empresa(s):", this.auth.userLogado.cod_empresa_sel);
+      console.log("Itens selecionados:", this.codigosItem);
+
+      const loading = await this.loadingCtrl.create({
+        message: "Atualizando custos e preços...",
+        duration: 30000,
+      });
+      await loading.present();
+
+      try {
+        // Chama o serviço para atualizar custos/preços dos itens selecionados
+        console.log("📞 Chamando atualizaCustoPrecoPorItens...");
+        const resultadoAtualizacao = await firstValueFrom(
+          this.movimento.atualizaCustoPrecoPorItens(
+            this.auth.userLogado.schema,
+            this.auth.userLogado.cod_empresa_sel,
+            this.codigosItem,
+          ),
+        );
+        console.log("✅ Custos/preços atualizados:", resultadoAtualizacao);
+
+        // Atualizar os valores de custo_medio e preco_venda nos itens selecionados
+        // Buscar os itens atualizados
+        console.log("📥 Buscando itens atualizados...");
+        const resultado = await firstValueFrom(
+          this.movimento.buscaFiltro(
+            this.auth.userLogado.schema,
+            this.auth.userLogado.cod_empresa_sel,
+          ),
+        );
+        console.log("✅ Itens recebidos:", resultado.item?.length || 0);
+
+        // Atualizar valores nos itens selecionados
+        this.codigosItem.forEach((itemSelecionado) => {
+          const itemAtualizado = resultado.item.find(
+            (i) =>
+              i.cod_item === itemSelecionado.cod_item &&
+              i.cod_empresa === itemSelecionado.cod_empresa,
+          );
+          if (itemAtualizado) {
+            console.log(
+              `📊 Atualizando item ${itemSelecionado.cod_item}: custo ${itemSelecionado.val_custo_medio} → ${itemAtualizado.val_custo_medio}, preço ${itemSelecionado.val_preco_venda} → ${itemAtualizado.val_preco_venda}`,
+            );
+            itemSelecionado.val_custo_medio = itemAtualizado.val_custo_medio;
+            itemSelecionado.val_preco_venda = itemAtualizado.val_preco_venda;
+          }
+        });
+
+        await loading.dismiss();
+        console.log("✅ Atualização concluída com sucesso!");
+      } catch (error) {
+        await loading.dismiss();
+        console.error("❌ Erro ao atualizar custos/preços:", error);
+        this.alert.presentToast(
+          "Erro ao atualizar custos/preços. Tente novamente.",
+          3000,
+        );
+        return;
+      }
       let percentualValor =
         this.valor > 0 ? "V" : this.percentual > 0 ? "P" : null;
 

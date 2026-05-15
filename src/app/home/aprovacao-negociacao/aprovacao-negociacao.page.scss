@@ -129,6 +129,60 @@ ion-toolbar {
 }
 
 // ===========================
+// Mensagem de Feedback
+// ===========================
+.feedback-message {
+  margin: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  animation: slideIn 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  ion-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+    line-height: 1.5;
+  }
+
+  &.sucesso {
+    background: linear-gradient(
+      135deg,
+      rgba(var(--ion-color-success-rgb), 0.15),
+      rgba(var(--ion-color-success-rgb), 0.08)
+    );
+    border: 2px solid var(--ion-color-success);
+    color: var(--ion-color-success-shade);
+
+    ion-icon {
+      color: var(--ion-color-success);
+    }
+  }
+
+  &.erro {
+    background: linear-gradient(
+      135deg,
+      rgba(var(--ion-color-danger-rgb), 0.15),
+      rgba(var(--ion-color-danger-rgb), 0.08)
+    );
+    border: 2px solid var(--ion-color-danger);
+    color: var(--ion-color-danger-shade);
+
+    ion-icon {
+      color: var(--ion-color-danger);
+    }
+  }
+}
+
+// ===========================
 // Lista de Negociações
 // ===========================
 .negotiations-list {
@@ -652,6 +706,16 @@ ion-toolbar {
     .count-badge {
       font-size: 1rem;
       padding: 10px 16px;
+    }
+  }
+
+  .feedback-message {
+    margin: 12px;
+    padding: 14px;
+    font-size: 0.95rem;
+
+    ion-icon {
+      font-size: 1.3rem;
     }
   }
 

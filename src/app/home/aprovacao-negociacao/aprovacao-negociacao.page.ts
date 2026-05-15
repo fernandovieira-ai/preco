@@ -29,6 +29,11 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
   subscription: Subscription = new Subscription();
   refresh = new Subject<void>();
 
+  // Feedback de aprovação/reprovação
+  feedbackMensagem: string = '';
+  feedbackTipo: 'sucesso' | 'erro' | '' = '';
+  mostrarFeedback: boolean = false;
+
   constructor(
     public auth: AuthService,
     public socket: WebsocketService,
@@ -47,12 +52,11 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
         debounceTime(100),
         distinctUntilChanged(),
         tap(() => {
-          console.log("executando busca tarefas pelo subscribe");
           this.buscaNegociacoesEmpresa();
           this.socket.observableExecutado = 1;
         }),
         catchError((err) => {
-          console.log("erro do observable", err);
+          console.error("Erro do observable:", err);
           this.alert.presentToast(err.error.message, 4000);
           throw err;
         }),
@@ -67,7 +71,6 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.subscription) {
       this.subscription.unsubscribe();
-      console.log("subscription cancelada no ionViewWillLeave");
       this.socket.socketExitApp(
         [{ cod_usuario: this.auth.userLogado.nom_usuario }],
         "trocaPreco",
@@ -86,7 +89,6 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       .pipe(
         tap((data) => {
           this.negociacoesEmpresa = data.message;
-          console.log(data.message);
         }),
         timeout(51000),
         catchError((err) => {
@@ -113,7 +115,6 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       .pipe(
         tap((data) => {
           this.negociacoesEmpresa = data.message;
-          console.log(data.message);
         }),
         timeout(51000),
         catchError((err) => {
@@ -164,11 +165,25 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
             )
             .pipe(
               tap((data) => {
-                this.alert.presentToast(data.message, 3000);
+                this.feedbackMensagem = data.message;
+                this.feedbackTipo = 'sucesso';
+                this.mostrarFeedback = true;
+
+                // Esconder feedback após 5 segundos
+                setTimeout(() => {
+                  this.mostrarFeedback = false;
+                }, 5000);
               }),
               timeout(51000),
               catchError((err) => {
-                this.handleError(err);
+                this.feedbackMensagem = err.error?.message || 'Erro ao aprovar negociação';
+                this.feedbackTipo = 'erro';
+                this.mostrarFeedback = true;
+
+                setTimeout(() => {
+                  this.mostrarFeedback = false;
+                }, 5000);
+
                 throw err;
               }),
               finalize(() => {
@@ -213,11 +228,25 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
             .reprovaRegra(this.auth.userLogado.schema, seq_lote)
             .pipe(
               tap((data) => {
-                this.alert.presentToast(data.message, 3000);
+                this.feedbackMensagem = data.message;
+                this.feedbackTipo = 'sucesso';
+                this.mostrarFeedback = true;
+
+                // Esconder feedback após 5 segundos
+                setTimeout(() => {
+                  this.mostrarFeedback = false;
+                }, 5000);
               }),
               timeout(51000),
               catchError((err) => {
-                this.handleError(err);
+                this.feedbackMensagem = err.error?.message || 'Erro ao reprovar negociação';
+                this.feedbackTipo = 'erro';
+                this.mostrarFeedback = true;
+
+                setTimeout(() => {
+                  this.mostrarFeedback = false;
+                }, 5000);
+
                 throw err;
               }),
               finalize(() => {

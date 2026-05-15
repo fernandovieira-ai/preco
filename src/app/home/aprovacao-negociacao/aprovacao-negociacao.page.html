@@ -41,6 +41,19 @@
         </ion-badge>
       </div>
 
+      <!-- Mensagem de Feedback -->
+      <div
+        class="feedback-message"
+        *ngIf="mostrarFeedback"
+        [class.sucesso]="feedbackTipo === 'sucesso'"
+        [class.erro]="feedbackTipo === 'erro'"
+      >
+        <ion-icon
+          [name]="feedbackTipo === 'sucesso' ? 'checkmark-circle' : 'close-circle'"
+        ></ion-icon>
+        <span>{{ feedbackMensagem }}</span>
+      </div>
+
       <!-- Lista de Negociações -->
       <div class="negotiations-list" *ngIf="negociacoesEmpresa.length > 0">
         <div

@@ -76,6 +76,48 @@ export class MovimentoService {
     );
   }
 
+  // Atualiza custo/preço apenas para itens selecionados
+  atualizaCustoPrecoPorItens(schema, cod_empresa, itens): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = { schema, cod_empresa, itens };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/atualizaCustoPrecoPorItens`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  // Busca apenas custos/preços para itens específicos
+  buscaCustoPrecoItens(schema, cod_empresa, itens): Observable<any> {
+    const token = window.localStorage.getItem("token");
+    const body = { schema, cod_empresa, itens };
+
+    const httpOptions = {
+      headers: new HttpHeaders({
+        "Content-Type": "application/json",
+        Authorization: `${token}`,
+      }),
+    };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/buscaCustoPrecoItens`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
   buscaItensPrecoAtualizacao(schema, cod_empresa): Observable<any> {
     const token = window.localStorage.getItem("token");
     const body = { schema, cod_empresa };

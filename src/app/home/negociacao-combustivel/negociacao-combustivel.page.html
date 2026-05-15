@@ -188,7 +188,12 @@
 
     <div class="empty-state" *ngIf="clientesFiltrados.length === 0">
       <ion-icon name="people-outline"></ion-icon>
-      <p>Use a busca ou filtro de data para encontrar clientes</p>
+      <p *ngIf="!clientesBuscaRealizada">
+        Use a busca ou filtro de data para encontrar clientes
+      </p>
+      <p *ngIf="clientesBuscaRealizada">
+        Nenhum cliente encontrado com os filtros aplicados
+      </p>
     </div>
   </div>
 
