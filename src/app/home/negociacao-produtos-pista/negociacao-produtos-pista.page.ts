@@ -317,13 +317,6 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
       console.log("✓ Produtos disponíveis:", this.produtosFiltrados.length);
 
       await loading.dismiss();
-
-      if (this.dataLoad.pessoa.length === 0) {
-        this.alert.presentToast(
-          "Nenhum cliente disponível. Verifique sua conexão ou tente novamente.",
-          3000,
-        );
-      }
     } catch (error) {
       await loading.dismiss();
       console.error("Erro ao carregar dados:", error);
