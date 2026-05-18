@@ -25,6 +25,7 @@ import { WebsocketService } from "src/app/services/websocket.service";
 })
 export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
   public negociacoesEmpresa: minhasNegociacoes[] = [];
+  public lotesAgrupados: any[] = []; // Negociações agrupadas por lote
   public progress;
   subscription: Subscription = new Subscription();
   refresh = new Subject<void>();
@@ -89,6 +90,7 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       .pipe(
         tap((data) => {
           this.negociacoesEmpresa = data.message;
+          this.agruparNegociacoesPorLote();
         }),
         timeout(51000),
         catchError((err) => {
@@ -115,6 +117,7 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       .pipe(
         tap((data) => {
           this.negociacoesEmpresa = data.message;
+          this.agruparNegociacoesPorLote();
         }),
         timeout(51000),
         catchError((err) => {
@@ -130,12 +133,44 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       });
   }
 
+  // Agrupar negociações por lote
+  agruparNegociacoesPorLote() {
+    const lotesMap = new Map<number, any>();
+
+    this.negociacoesEmpresa.forEach((negociacao) => {
+      const loteKey = negociacao.seq_lote_alteracao;
+
+      if (!lotesMap.has(loteKey)) {
+        lotesMap.set(loteKey, {
+          seq_lote_alteracao: negociacao.seq_lote_alteracao,
+          des_observacao: negociacao.des_observacao,
+          dta_inclusao: negociacao.dta_inclusao,
+          progresso: negociacao.progresso,
+          total: negociacao.total,
+          total_registros: negociacao.total_registros,
+          ind_excluido: negociacao.ind_excluido,
+          error: negociacao.error,
+          empresas: [],
+        });
+      }
+
+      // Adicionar empresa ao lote
+      lotesMap.get(loteKey).empresas.push({
+        cod_empresa: negociacao.cod_empresa,
+        nom_fantasia: negociacao.nom_fantasia,
+      });
+    });
+
+    // Converter Map para array
+    this.lotesAgrupados = Array.from(lotesMap.values());
+  }
+
   // Verifica se o usuário tem permissão para aprovar negociações
   get podeAprovarNegociacao(): boolean {
     return this.auth.userLogado?.ind_aprova_negociacao === "S";
   }
 
-  aprovarRegra(seq_lote, item) {
+  aprovarLote(lote) {
     // Validar permissão antes de aprovar
     if (!this.podeAprovarNegociacao) {
       this.alert.presentAlert(
@@ -146,64 +181,89 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       return;
     }
 
+    const qtdEmpresas = lote.empresas.length;
+    const empresasNomes = lote.empresas.map(e => e.nom_fantasia).join(', ');
+    const mensagem = qtdEmpresas > 1
+      ? `Este lote contém ${qtdEmpresas} postos: ${empresasNomes}`
+      : `Posto: ${empresasNomes}`;
+
     this.alert
       .presentAlertConfirm(
         "ATENÇÃO",
-        "Este procedimento envia as regras para o EMSys3",
+        `Este procedimento envia as regras para o EMSys3\n${mensagem}`,
         "Deseja Continuar ?",
       )
       .then((data) => {
         if (data === "sim") {
-          this.showLoading("Aprovando Negociação...", 50000);
+          this.showLoading(`Aprovando ${qtdEmpresas} negociação(ões)...`, 50000);
 
-          this.movimento
-            .aprovaRegra(
-              this.auth.userLogado.schema,
-              item.cod_empresa,
-              this.auth.userLogado.nom_usuario,
-              seq_lote,
-            )
-            .pipe(
-              tap((data) => {
-                this.feedbackMensagem = data.message;
-                this.feedbackTipo = 'sucesso';
-                this.mostrarFeedback = true;
+          // Aprovar para cada empresa do lote
+          let aprovados = 0;
+          let erros = 0;
 
-                // Esconder feedback após 5 segundos
-                setTimeout(() => {
-                  this.mostrarFeedback = false;
-                }, 5000);
-              }),
-              timeout(51000),
-              catchError((err) => {
-                this.feedbackMensagem = err.error?.message || 'Erro ao aprovar negociação';
-                this.feedbackTipo = 'erro';
-                this.mostrarFeedback = true;
+          lote.empresas.forEach((empresa, index) => {
+            this.movimento
+              .aprovaRegra(
+                this.auth.userLogado.schema,
+                empresa.cod_empresa,
+                this.auth.userLogado.nom_usuario,
+                lote.seq_lote_alteracao,
+              )
+              .pipe(
+                tap((data) => {
+                  aprovados++;
 
-                setTimeout(() => {
-                  this.mostrarFeedback = false;
-                }, 5000);
+                  // Se for a última aprovação
+                  if (aprovados + erros === qtdEmpresas) {
+                    this.loadingCtrl.dismiss().catch(() => {});
 
-                throw err;
-              }),
-              finalize(() => {
-                this.loadingCtrl.dismiss().catch(() => {});
-              }),
-            )
-            .subscribe(() => {
-              setTimeout(() => {
-                this.socket.setAtualiacaoTarefas(
-                  [{ cod_usuario: this.auth.userLogado.nom_usuario }],
-                  "trocaPreco",
-                );
-                this.refresh = new Subject<void>();
-              }, 1000);
-            });
+                    if (erros === 0) {
+                      this.feedbackMensagem = `${qtdEmpresas} negociação(ões) aprovada(s) com sucesso!`;
+                      this.feedbackTipo = 'sucesso';
+                    } else {
+                      this.feedbackMensagem = `${aprovados} aprovada(s), ${erros} com erro`;
+                      this.feedbackTipo = 'erro';
+                    }
+
+                    this.mostrarFeedback = true;
+                    setTimeout(() => {
+                      this.mostrarFeedback = false;
+                    }, 5000);
+
+                    setTimeout(() => {
+                      this.socket.setAtualiacaoTarefas(
+                        [{ cod_usuario: this.auth.userLogado.nom_usuario }],
+                        "trocaPreco",
+                      );
+                      this.refresh = new Subject<void>();
+                    }, 1000);
+                  }
+                }),
+                timeout(51000),
+                catchError((err) => {
+                  erros++;
+
+                  if (aprovados + erros === qtdEmpresas) {
+                    this.loadingCtrl.dismiss().catch(() => {});
+                    this.feedbackMensagem = `${aprovados} aprovada(s), ${erros} com erro`;
+                    this.feedbackTipo = 'erro';
+                    this.mostrarFeedback = true;
+
+                    setTimeout(() => {
+                      this.mostrarFeedback = false;
+                    }, 5000);
+                  }
+
+                  throw err;
+                }),
+              )
+              .subscribe();
+          });
         }
       });
   }
 
-  reprovarRegra(seq_lote, item) {
+  reprovarLote(lote) {
     // Validar permissão antes de reprovar
     if (!this.podeAprovarNegociacao) {
       this.alert.presentAlert(
@@ -214,21 +274,27 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       return;
     }
 
+    const qtdEmpresas = lote.empresas.length;
+    const empresasNomes = lote.empresas.map(e => e.nom_fantasia).join(', ');
+    const mensagem = qtdEmpresas > 1
+      ? `Este lote contém ${qtdEmpresas} postos: ${empresasNomes}`
+      : `Posto: ${empresasNomes}`;
+
     this.alert
       .presentAlertConfirm(
         "ATENÇÃO",
-        "Deseja reprovar esta negociação?",
+        `Deseja reprovar esta negociação?\n${mensagem}`,
         "Esta ação não poderá ser desfeita",
       )
       .then((data) => {
         if (data === "sim") {
-          this.showLoading("Reprovando Negociação...", 50000);
+          this.showLoading(`Reprovando ${qtdEmpresas} negociação(ões)...`, 50000);
 
           this.movimento
-            .reprovaRegra(this.auth.userLogado.schema, seq_lote)
+            .reprovaRegra(this.auth.userLogado.schema, lote.seq_lote_alteracao)
             .pipe(
               tap((data) => {
-                this.feedbackMensagem = data.message;
+                this.feedbackMensagem = `${qtdEmpresas} negociação(ões) reprovada(s) com sucesso!`;
                 this.feedbackTipo = 'sucesso';
                 this.mostrarFeedback = true;
 

@@ -228,7 +228,7 @@
 
     <!-- Lista agrupada por empresa -->
     <ng-container
-      *ngFor="let empresaGroup of groupedCombustiveis; trackBy: trackByEmpresaGroup"
+      *ngFor="let empresaGroup of groupedCombustiveis; trackBy: trackByCodEmpresa"
     >
       <div class="empresa-section">
         <div class="empresa-header">
@@ -241,7 +241,7 @@
 
         <div class="items-grid">
           <ion-card
-            *ngFor="let combustivel of empresaGroup.items; trackBy: trackByCombustivel"
+            *ngFor="let combustivel of empresaGroup.items; trackBy: trackByCodItem"
             [class.selected]="isCombustivelSelecionado(combustivel)"
             (click)="toggleCombustivel(combustivel)"
             button="true"
@@ -254,6 +254,7 @@
                 >
                   <ion-icon name="checkmark-circle" color="success"></ion-icon>
                 </div>
+                <ion-icon name="water" color="primary"></ion-icon>
                 <h3>{{ getCombustivelNome(combustivel) }}</h3>
                 <p class="item-code">Código: {{ combustivel.cod_item }}</p>
               </div>
@@ -337,7 +338,7 @@
           </ion-item>
         </ng-container>
 
-        <!-- Para Preço Fixo - Lista de Itens -->
+        <!-- Para Preço Fixo - Lista de Itens Agrupados por Empresa -->
         <ng-container *ngIf="tipoNegociacao === 'fixo'">
           <div class="preco-fixo-info">
             <ion-icon name="information-circle-outline"></ion-icon>
@@ -345,48 +346,61 @@
           </div>
 
           <div class="precos-fixos-list">
-            <ion-card
-              *ngFor="let item of combustiveisSelecionados; trackBy: trackByCombustivel"
-              class="item-preco-card"
+            <!-- Agrupamento por Empresa -->
+            <ng-container
+              *ngFor="let empresaGroup of combustiveisSelecionadosAgrupados; trackBy: trackByCodEmpresa"
             >
-              <ion-card-content>
-                <div class="item-header">
-                  <div class="item-info">
-                    <h4>{{ getCombustivelNome(item) }}</h4>
-                    <p class="item-code">Código: {{ item.cod_item }}</p>
-                  </div>
-                  <ion-icon name="water" color="primary"></ion-icon>
-                </div>
+              <!-- Header da Empresa -->
+              <div class="empresa-header-step3">
+                <ion-icon name="business" class="empresa-icon"></ion-icon>
+                <h3 class="empresa-title">{{ empresaGroup.nom_fantasia }}</h3>
+                <p class="empresa-code">Código: {{ empresaGroup.cod_empresa }}</p>
+              </div>
 
-                <div class="item-precos">
-                  <div class="preco-atual" *ngIf="getPrecoAtualItem(item)">
-                    <ion-label class="preco-label">Preço de Venda</ion-label>
-                    <div class="preco-value">
-                      R$ {{ getPrecoAtualItem(item) | number: '1.2-2' }}
+              <!-- Combustíveis da Empresa -->
+              <ion-card
+                *ngFor="let item of empresaGroup.items; trackBy: trackByCombustivel"
+                class="item-preco-card"
+              >
+                <ion-card-content>
+                  <div class="item-header">
+                    <div class="item-info">
+                      <h4>{{ getCombustivelNome(item) }}</h4>
+                      <p class="item-code">Código: {{ item.cod_item }}</p>
+                    </div>
+                    <ion-icon name="water" color="primary"></ion-icon>
+                  </div>
+
+                  <div class="item-precos">
+                    <div class="preco-atual" *ngIf="getPrecoAtualItem(item)">
+                      <ion-label class="preco-label">Preço de Venda</ion-label>
+                      <div class="preco-value">
+                        R$ {{ getPrecoAtualItem(item) | number: '1.2-2' }}
+                      </div>
+                    </div>
+
+                    <div class="preco-novo">
+                      <ion-item lines="none">
+                        <ion-label position="stacked" class="preco-label">
+                          <ion-icon name="pricetag-outline"></ion-icon>
+                          Novo Preço Fixo *
+                        </ion-label>
+                        <ion-input
+                          type="text"
+                          inputmode="decimal"
+                          [value]="getPrecoFixoItem(item.cod_item)"
+                          (ionInput)="setPrecoFixoItem(item.cod_item, $any($event.target).value)"
+                          (ionBlur)="formatarPrecoFixo(item.cod_item, $event)"
+                          placeholder="0,00"
+                          class="preco-input"
+                        >
+                        </ion-input>
+                      </ion-item>
                     </div>
                   </div>
-
-                  <div class="preco-novo">
-                    <ion-item lines="none">
-                      <ion-label position="stacked" class="preco-label">
-                        <ion-icon name="pricetag-outline"></ion-icon>
-                        Novo Preço Fixo *
-                      </ion-label>
-                      <ion-input
-                        type="text"
-                        inputmode="decimal"
-                        [value]="getPrecoFixoItem(item.cod_item)"
-                        (ionInput)="setPrecoFixoItem(item.cod_item, $any($event.target).value)"
-                        (ionBlur)="formatarPrecoFixo(item.cod_item, $event)"
-                        placeholder="0,00"
-                        class="preco-input"
-                      >
-                      </ion-input>
-                    </ion-item>
-                  </div>
-                </div>
-              </ion-card-content>
-            </ion-card>
+                </ion-card-content>
+              </ion-card>
+            </ng-container>
           </div>
 
           <div
@@ -451,17 +465,28 @@
         >
       </div>
 
-      <!-- Cards de combustíveis -->
+      <!-- Cards de combustíveis agrupados por empresa -->
       <div class="combustiveis-resumo">
-        <div
-          class="combustivel-card"
-          *ngFor="let combustivel of combustiveisSelecionados; trackBy: trackByCombustivel"
+        <ng-container
+          *ngFor="let empresaGroup of combustiveisSelecionadosAgrupados; trackBy: trackByCodEmpresa"
         >
-          <h4 class="combustivel-titulo">
-            {{ getCombustivelNome(combustivel) }}
-          </h4>
+          <!-- Header da Empresa -->
+          <div class="empresa-header-resumo">
+            <ion-icon name="business" class="empresa-icon"></ion-icon>
+            <h3 class="empresa-title">{{ empresaGroup.nom_fantasia }}</h3>
+            <ion-badge color="primary">{{ empresaGroup.items.length }}</ion-badge>
+          </div>
 
-          <div class="preco-grid">
+          <!-- Combustíveis da Empresa -->
+          <div
+            class="combustivel-card"
+            *ngFor="let combustivel of empresaGroup.items; trackBy: trackByCombustivel"
+          >
+            <h4 class="combustivel-titulo">
+              {{ getCombustivelNome(combustivel) }}
+            </h4>
+
+            <div class="preco-grid">
             <!-- Preço Atual -->
             <div class="preco-box preco-atual-box">
               <div class="preco-label">PREÇO ATUAL</div>
@@ -506,6 +531,7 @@
             </div>
           </div>
         </div>
+        </ng-container>
       </div>
 
       <!-- Detalhes da negociação -->

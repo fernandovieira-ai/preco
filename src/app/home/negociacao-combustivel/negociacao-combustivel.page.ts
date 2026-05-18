@@ -44,6 +44,11 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     cod_empresa: number;
     items: any[];
   }[] = []; // Combustíveis agrupados por empresa
+  combustiveisSelecionadosAgrupados: {
+    nom_fantasia: string;
+    cod_empresa: number;
+    items: any[];
+  }[] = []; // Combustíveis selecionados agrupados (Step 3 e 4)
   private combustiveisSelecionadosSet = new Set<number>(); // O(1) lookup!
 
   // Cache para nomes (memoização)
@@ -139,6 +144,16 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         !this.combustiveisDisponiveis ||
         this.combustiveisDisponiveis.length === 0
       ) {
+        console.log("=== DEBUG CARREGAMENTO DE COMBUSTÍVEIS ===");
+        console.log(
+          "Empresas selecionadas pelo usuário:",
+          this.auth.userLogado.cod_empresa_sel,
+        );
+        console.log(
+          "Total de empresas selecionadas:",
+          this.auth.userLogado.cod_empresa_sel?.length,
+        );
+
         const data = await this.movimento
           .buscaFiltroItem(
             this.auth.userLogado.schema,
@@ -147,6 +162,22 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           .toPromise();
 
         this.combustiveisDisponiveis = data.item || [];
+
+        console.log(
+          "DEBUG - Total combustíveis carregados:",
+          this.combustiveisDisponiveis.length,
+        );
+
+        // Verificar distribuição de combustíveis por empresa
+        const distribuicao = new Map();
+        this.combustiveisDisponiveis.forEach((c) => {
+          const key = `${c.cod_empresa} - ${c.nom_fantasia}`;
+          distribuicao.set(key, (distribuicao.get(key) || 0) + 1);
+        });
+        console.log("DEBUG - Distribuição de combustíveis por empresa:");
+        distribuicao.forEach((count, empresa) => {
+          console.log(`  ${empresa}: ${count} combustíveis`);
+        });
 
         // Carregar formas de pagamento do backend
         this.movimento.formaPagto = data.formaPagto || [];
@@ -210,6 +241,14 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         );
 
         // 2. Buscar APENAS os custos/preços atualizados (sem recarregar todos os itens)
+        console.log("=== DEBUG BUSCA DE CUSTOS ===");
+        console.log("Buscando custos para empresas:", this.auth.userLogado.cod_empresa_sel);
+        console.log("Combustíveis a buscar:", this.combustiveisSelecionados.map(c => ({
+          cod_item: c.cod_item,
+          cod_empresa: c.cod_empresa,
+          des_item: c.des_item
+        })));
+
         const dataCustos = await firstValueFrom(
           this.movimento.buscaCustoPrecoItens(
             this.auth.userLogado.schema,
@@ -218,14 +257,27 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           ),
         );
 
+        console.log("Custos retornados do backend:", dataCustos.custosPrecos?.length);
+        console.log("Empresas nos custos retornados:",
+          Array.from(new Set(dataCustos.custosPrecos?.map((c: any) => c.cod_empresa) || [])));
+
         // 3. Atualizar apenas os campos de custo/preço nos itens selecionados
+        // IMPORTANTE: Usar cod_item + cod_empresa como chave, não só cod_item
+        // porque o mesmo item pode existir em múltiplas empresas
         const custosMap = new Map(
-          dataCustos.custosPrecos.map((c: any) => [c.cod_item, c]),
+          dataCustos.custosPrecos.map((c: any) => [`${c.cod_item}_${c.cod_empresa}`, c]),
         );
+
+        console.log("=== DEBUG ATUALIZAÇÃO DE CUSTOS ===");
+        console.log("Combustíveis selecionados ANTES da atualização:", this.combustiveisSelecionados.length);
+        console.log("Empresas nos combustíveis ANTES:",
+          Array.from(new Set(this.combustiveisSelecionados.map(c => c.cod_empresa))));
 
         this.combustiveisSelecionados = this.combustiveisSelecionados.map(
           (item) => {
-            const custoAtualizado: any = custosMap.get(item.cod_item);
+            // Buscar pelo cod_item + cod_empresa
+            const chave = `${item.cod_item}_${item.cod_empresa}`;
+            const custoAtualizado: any = custosMap.get(chave);
             if (custoAtualizado) {
               return {
                 ...item,
@@ -236,6 +288,13 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
             return item;
           },
         );
+
+        console.log("Combustíveis selecionados DEPOIS da atualização:", this.combustiveisSelecionados.length);
+        console.log("Empresas nos combustíveis DEPOIS:",
+          Array.from(new Set(this.combustiveisSelecionados.map(c => c.cod_empresa))));
+
+        // Atualizar agrupamento após atualizar os combustíveis
+        this.atualizarCombustiveisSelecionadosAgrupados();
 
         await loading.dismiss();
       } catch (error) {
@@ -448,47 +507,85 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     this.groupedCombustiveis = this.groupCombustiveisByCodEmpresa(combustiveis);
   }
 
+  // Agrupar combustíveis por empresa
   groupCombustiveisByCodEmpresa(
     items: any[],
   ): { nom_fantasia: string; cod_empresa: number; items: any[] }[] {
-    const groupedItems: {
-      nom_fantasia: string;
-      cod_empresa: number;
-      items: any[];
-    }[] = [];
+    const groupedMap = new Map<number, { nom_fantasia: string; cod_empresa: number; items: any[] }>();
 
     items.forEach((item) => {
-      const foundGroup = groupedItems.find(
-        (group) => group.cod_empresa === item.cod_empresa,
-      );
-      if (foundGroup) {
-        foundGroup.items.push(item);
-      } else {
-        groupedItems.push({
-          nom_fantasia: item.nom_fantasia,
+      if (!groupedMap.has(item.cod_empresa)) {
+        groupedMap.set(item.cod_empresa, {
+          nom_fantasia: item.nom_fantasia || `Empresa ${item.cod_empresa}`,
           cod_empresa: item.cod_empresa,
-          items: [item],
+          items: [],
         });
       }
+      groupedMap.get(item.cod_empresa)!.items.push(item);
     });
 
-    return groupedItems;
+    // Converter Map para array e ordenar por nome fantasia
+    return Array.from(groupedMap.values()).sort((a, b) =>
+      a.nom_fantasia.localeCompare(b.nom_fantasia),
+    );
+  }
+
+  // Atualizar agrupamento de combustíveis selecionados
+  private atualizarCombustiveisSelecionadosAgrupados() {
+    this.combustiveisSelecionadosAgrupados = this.groupCombustiveisByCodEmpresa(this.combustiveisSelecionados);
   }
 
   toggleCombustivel(combustivel: any) {
     const codItem = combustivel.cod_item;
+
     if (this.combustiveisSelecionadosSet.has(codItem)) {
+      // DESMARCAR: Remover TODAS as variações deste combustível (de todas as empresas)
       this.combustiveisSelecionadosSet.delete(codItem);
-      const index = this.combustiveisSelecionados.findIndex(
+
+      // Remover todas as variações do array
+      this.combustiveisSelecionados = this.combustiveisSelecionados.filter(
+        (c) => c.cod_item !== codItem,
+      );
+
+      console.log(`Desmarcado combustível ${codItem} de todas as empresas`);
+    } else {
+      // MARCAR: Adicionar TODAS as variações deste combustível (de todas as empresas)
+      this.combustiveisSelecionadosSet.add(codItem);
+
+      // Buscar todas as variações deste combustível em diferentes empresas
+      const variacoesCombustivel = this.combustiveisDisponiveis.filter(
         (c) => c.cod_item === codItem,
       );
-      if (index >= 0) {
-        this.combustiveisSelecionados.splice(index, 1);
-      }
-    } else {
-      this.combustiveisSelecionadosSet.add(codItem);
-      this.combustiveisSelecionados.push(combustivel);
+
+      console.log(`=== SELECIONANDO COMBUSTÍVEL ===`);
+      console.log(`Combustível: ${combustivel.des_item || combustivel.nom_item}`);
+      console.log(`Código: ${codItem}`);
+      console.log(`Encontradas ${variacoesCombustivel.length} variação(ões) em empresas diferentes`);
+
+      // Adicionar todas as variações
+      variacoesCombustivel.forEach((variacao) => {
+        // Verificar se esta variação específica já foi adicionada
+        const jaAdicionado = this.combustiveisSelecionados.some(
+          (c) =>
+            c.cod_item === variacao.cod_item &&
+            c.cod_empresa === variacao.cod_empresa,
+        );
+
+        if (!jaAdicionado) {
+          this.combustiveisSelecionados.push(variacao);
+          console.log(
+            `  → Adicionado: Empresa ${variacao.cod_empresa} - ${variacao.nom_fantasia}`,
+          );
+        }
+      });
+
+      console.log(
+        `Total combustíveis selecionados agora: ${this.combustiveisSelecionados.length}`,
+      );
     }
+
+    // Atualizar agrupamento
+    this.atualizarCombustiveisSelecionadosAgrupados();
   }
 
   isCombustivelSelecionado(combustivel: any): boolean {
@@ -785,6 +882,25 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     }
 
     // 4. Criar registros de negociação para cada combustível e forma de pagamento
+    console.log("=== DEBUG CRIAÇÃO DE NEGOCIAÇÃO COMBUSTÍVEL ===");
+    console.log("Total combustíveis selecionados:", this.combustiveisSelecionados.length);
+
+    // Verificar empresas nos combustíveis selecionados
+    const empresasNosCombustiveis = new Set();
+    this.combustiveisSelecionados.forEach((item) => {
+      if (item.cod_empresa) {
+        empresasNosCombustiveis.add(item.cod_empresa);
+      }
+    });
+    console.log("Empresas únicas nos combustíveis selecionados:", Array.from(empresasNosCombustiveis));
+    console.log("Amostra de combustíveis selecionados (primeiros 3):",
+      this.combustiveisSelecionados.slice(0, 3).map(c => ({
+        des_item: c.des_item,
+        cod_empresa: c.cod_empresa,
+        nom_fantasia: c.nom_fantasia
+      }))
+    );
+
     this.combustiveisSelecionados.forEach((item) => {
       formasSelecionadas.forEach((forma) => {
         // Calcular novo preço baseado no tipo de negociação
@@ -807,6 +923,9 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
 
         const custoMedio = item.val_custo_medio || 0;
         const valorValido = valorCalculado >= custoMedio;
+
+        // IMPORTANTE: Garantir que cod_empresa seja um número, não um array
+        const codEmpresa = item.cod_empresa || (Array.isArray(this.auth.userLogado.cod_empresa_sel) ? this.auth.userLogado.cod_empresa_sel[0] : this.auth.userLogado.cod_empresa_sel);
 
         // Criar objeto de negociação
         const negociacao: pessoaNegociacao = {
@@ -837,7 +956,7 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           valor_valido: valorValido,
           valor: this.valorReais || this.valorPercentual || 0,
           nom_fantasia: item.nom_fantasia || "",
-          cod_empresa: item.cod_empresa || this.auth.userLogado.cod_empresa_sel,
+          cod_empresa: codEmpresa,
           margem: this.calculaMargem(valorCalculado, custoMedio),
           margem_valor: this.calculaMargemValor(valorCalculado, custoMedio),
           percentual_alteracao: this.calculaPercentualAlteracao(
@@ -861,6 +980,11 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
         negociacaoNova.push(negociacao);
       });
     });
+
+    // Log das empresas únicas na negociação final
+    const empresasNaNegociacao = new Set(negociacaoNova.map(n => n.cod_empresa));
+    console.log("Empresas únicas na negociação final:", Array.from(empresasNaNegociacao));
+    console.log("Total de itens na negociação:", negociacaoNova.length);
 
     // 5. Validar se há itens válidos
     const regrasValidas = negociacaoNova.filter((r) => r.valor_valido);

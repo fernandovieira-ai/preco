@@ -33,11 +33,11 @@
           <p>Revise e aprove as regras antes de enviar ao sistema</p>
         </div>
         <ion-badge
-          *ngIf="negociacoesEmpresa.length > 0"
+          *ngIf="lotesAgrupados.length > 0"
           color="primary"
           class="count-badge"
         >
-          {{negociacoesEmpresa.length}}
+          {{lotesAgrupados.length}}
         </ion-badge>
       </div>
 
@@ -55,34 +55,47 @@
       </div>
 
       <!-- Lista de Negociações -->
-      <div class="negotiations-list" *ngIf="negociacoesEmpresa.length > 0">
+      <div class="negotiations-list" *ngIf="lotesAgrupados.length > 0">
         <div
-          *ngFor="let item of negociacoesEmpresa"
+          *ngFor="let lote of lotesAgrupados"
           class="negotiation-card"
-          [class.processing]="item.progresso < item.total && item.ind_excluido === 'N'"
-          [class.completed]="item.progresso === item.total && item.ind_excluido === 'N'"
+          [class.processing]="lote.progresso < lote.total && lote.ind_excluido === 'N'"
+          [class.completed]="lote.progresso === lote.total && lote.ind_excluido === 'N'"
         >
           <!-- Card Header -->
-          <div
-            class="card-header"
-            (click)="goToHistoricoDetalhe(item.seq_lote_alteracao, item.cod_empresa, item.ind_excluido)"
-          >
+          <div class="card-header">
             <div class="company-info">
               <div class="company-avatar">
-                <ion-icon name="business"></ion-icon>
+                <ion-icon name="layers"></ion-icon>
               </div>
               <div class="company-details">
-                <h3>{{item.nom_fantasia}}</h3>
-                <p class="lote-info">
-                  <ion-icon name="layers-outline"></ion-icon>
-                  Lote {{item.des_observacao}}
+                <h3>Lote {{lote.des_observacao}}</h3>
+                <p class="lote-info" *ngIf="lote.empresas.length === 1">
+                  <ion-icon name="business-outline"></ion-icon>
+                  {{lote.empresas[0].nom_fantasia}}
+                </p>
+                <p class="lote-info" *ngIf="lote.empresas.length > 1">
+                  <ion-icon name="business-outline"></ion-icon>
+                  {{lote.empresas.length}} postos
                 </p>
               </div>
             </div>
-            <ion-icon
-              name="chevron-forward-outline"
-              class="arrow-icon"
-            ></ion-icon>
+            <ion-badge *ngIf="lote.empresas.length > 1" color="primary">
+              {{lote.empresas.length}}
+            </ion-badge>
+          </div>
+
+          <!-- Lista de Empresas (quando múltiplas) -->
+          <div class="empresas-list" *ngIf="lote.empresas.length > 1">
+            <div
+              class="empresa-item"
+              *ngFor="let empresa of lote.empresas"
+              (click)="goToHistoricoDetalhe(lote.seq_lote_alteracao, empresa.cod_empresa, lote.ind_excluido)"
+            >
+              <ion-icon name="business"></ion-icon>
+              <span>{{empresa.nom_fantasia}}</span>
+              <ion-icon name="chevron-forward-outline" class="arrow-icon-small"></ion-icon>
+            </div>
           </div>
 
           <!-- Card Content -->
@@ -92,7 +105,7 @@
               <div class="status-info">
                 <div class="status-badge-container">
                   <ion-badge
-                    *ngIf="item.progresso === item.total && item.ind_excluido === 'N'"
+                    *ngIf="lote.progresso === lote.total && lote.ind_excluido === 'N'"
                     color="success"
                     class="status-badge"
                   >
@@ -100,7 +113,7 @@
                     Concluído
                   </ion-badge>
                   <ion-badge
-                    *ngIf="item.progresso < item.total && item.ind_excluido === 'N'"
+                    *ngIf="lote.progresso < lote.total && lote.ind_excluido === 'N'"
                     color="warning"
                     class="status-badge"
                   >
@@ -110,7 +123,7 @@
                 </div>
                 <div class="records-count">
                   <ion-icon name="document-text-outline"></ion-icon>
-                  <span>{{item.total_registros}} registros</span>
+                  <span>{{lote.total_registros}} registros</span>
                 </div>
               </div>
 
@@ -119,14 +132,14 @@
                 <div class="progress-header">
                   <span class="progress-label">Progresso</span>
                   <span class="progress-value"
-                    >{{item.progresso}}/{{item.total}}</span
+                    >{{lote.progresso}}/{{lote.total}}</span
                   >
                 </div>
                 <ion-progress-bar
                   mode="ios"
                   type="determinate"
-                  [value]="item.progresso / item.total"
-                  [color]="item.progresso === item.total ? 'success' : 'primary'"
+                  [value]="lote.progresso / lote.total"
+                  [color]="lote.progresso === lote.total ? 'success' : 'primary'"
                   class="custom-progress"
                 ></ion-progress-bar>
               </div>
@@ -135,10 +148,10 @@
             <!-- Mensagem de Erro/Sucesso -->
             <div
               class="message-container"
-              *ngIf="item.error && item.progresso === item.total && item.ind_excluido === 'N'"
+              *ngIf="lote.error && lote.progresso === lote.total && lote.ind_excluido === 'N'"
             >
               <ion-icon name="information-circle" color="success"></ion-icon>
-              <span>{{item.error}}</span>
+              <span>{{lote.error}}</span>
             </div>
           </div>
 
@@ -148,7 +161,7 @@
               <ion-chip color="medium" outline>
                 <ion-icon name="calendar-outline"></ion-icon>
                 <ion-label
-                  >{{item.dta_inclusao | date: 'dd/MM/yyyy'}}</ion-label
+                  >{{lote.dta_inclusao | date: 'dd/MM/yyyy'}}</ion-label
                 >
               </ion-chip>
             </div>
@@ -158,8 +171,8 @@
                 fill="outline"
                 color="danger"
                 class="reject-button"
-                (click)="reprovarRegra(item.seq_lote_alteracao, item)"
-                [disabled]="item.progresso < item.total"
+                (click)="reprovarLote(lote)"
+                [disabled]="lote.progresso < lote.total"
               >
                 <ion-icon name="close-circle" slot="start"></ion-icon>
                 Reprovar
@@ -169,11 +182,11 @@
                 expand="block"
                 color="success"
                 class="approve-button"
-                (click)="aprovarRegra(item.seq_lote_alteracao, item)"
-                [disabled]="item.progresso < item.total"
+                (click)="aprovarLote(lote)"
+                [disabled]="lote.progresso < lote.total"
               >
                 <ion-icon name="checkmark-done" slot="start"></ion-icon>
-                Aprovar
+                Aprovar {{lote.empresas.length > 1 ? 'Todos' : ''}}
               </ion-button>
               <div *ngIf="!podeAprovarNegociacao" class="no-permission-message">
                 <ion-icon name="lock-closed-outline" color="medium"></ion-icon>
@@ -185,7 +198,7 @@
       </div>
 
       <!-- Estado vazio -->
-      <div class="empty-state" *ngIf="negociacoesEmpresa.length === 0">
+      <div class="empty-state" *ngIf="lotesAgrupados.length === 0">
         <div class="empty-icon">
           <ion-icon name="checkmark-done-circle-outline"></ion-icon>
         </div>

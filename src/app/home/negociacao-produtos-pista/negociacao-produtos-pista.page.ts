@@ -1119,6 +1119,25 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
       return;
     }
 
+    console.log("=== DEBUG CRIAÇÃO DE NEGOCIAÇÃO ===");
+    console.log("Total produtos selecionados:", this.produtosSelecionados.length);
+
+    // Verificar empresas nos produtos selecionados
+    const empresasNosProdutos = new Set();
+    this.produtosSelecionados.forEach((item) => {
+      if (item.cod_empresa) {
+        empresasNosProdutos.add(item.cod_empresa);
+      }
+    });
+    console.log("Empresas únicas nos produtos selecionados:", Array.from(empresasNosProdutos));
+    console.log("Amostra de produtos selecionados (primeiros 3):",
+      this.produtosSelecionados.slice(0, 3).map(p => ({
+        des_item: p.des_item,
+        cod_empresa: p.cod_empresa,
+        nom_fantasia: p.nom_fantasia
+      }))
+    );
+
     this.produtosSelecionados.forEach((item) => {
       formasSelecionadas.forEach((forma) => {
         let valorCalculado = 0;
@@ -1138,6 +1157,9 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
 
         const custoMedio = item.val_custo_medio || 0;
         const valorValido = valorCalculado >= custoMedio;
+
+        // IMPORTANTE: Garantir que cod_empresa seja um número, não um array
+        const codEmpresa = item.cod_empresa || (Array.isArray(this.auth.userLogado.cod_empresa_sel) ? this.auth.userLogado.cod_empresa_sel[0] : this.auth.userLogado.cod_empresa_sel);
 
         const negociacao: pessoaNegociacao = {
           cod_item: item.cod_item,
@@ -1167,7 +1189,7 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
           valor_valido: valorValido,
           valor: this.valorReais || this.valorPercentual || 0,
           nom_fantasia: item.nom_fantasia || "",
-          cod_empresa: item.cod_empresa || this.auth.userLogado.cod_empresa_sel,
+          cod_empresa: codEmpresa,
           margem: this.calculaMargem(valorCalculado, custoMedio),
           margem_valor: this.calculaMargemValor(valorCalculado, custoMedio),
           percentual_alteracao: this.calculaPercentualAlteracao(
@@ -1190,6 +1212,11 @@ export class NegociacaoProdutosPistaPage implements OnInit, OnDestroy {
         negociacaoNova.push(negociacao);
       });
     });
+
+    // Log das empresas únicas na negociação final
+    const empresasNaNegociacao = new Set(negociacaoNova.map(n => n.cod_empresa));
+    console.log("Empresas únicas na negociação final:", Array.from(empresasNaNegociacao));
+    console.log("Total de itens na negociação:", negociacaoNova.length);
 
     const regrasValidas = negociacaoNova.filter((r) => r.valor_valido);
 

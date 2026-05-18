@@ -684,6 +684,45 @@ ion-content {
       width: 100%;
       box-sizing: border-box;
 
+      // Header da empresa na Step 3
+      .empresa-header-step3 {
+        background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-top: 12px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 6px rgba(36, 2, 75, 0.15);
+
+        &:first-child {
+          margin-top: 0;
+        }
+
+        .empresa-icon {
+          font-size: 20px;
+          color: white;
+          flex-shrink: 0;
+        }
+
+        .empresa-title {
+          margin: 0;
+          font-size: 14px;
+          font-weight: 700;
+          color: white;
+          letter-spacing: 0.3px;
+          flex: 1;
+        }
+
+        .empresa-code {
+          margin: 0;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.85);
+          font-weight: 500;
+        }
+      }
+
       .item-preco-card {
         margin: 0;
         background: white;
@@ -1044,6 +1083,42 @@ ion-content {
     display: flex;
     flex-direction: column;
     gap: 16px;
+
+    // Header da empresa no resumo (Step 4)
+    .empresa-header-resumo {
+      background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 3px 8px rgba(36, 2, 75, 0.2);
+
+      &:first-child {
+        margin-top: 0;
+      }
+
+      .empresa-icon {
+        font-size: 22px;
+        color: white;
+        flex-shrink: 0;
+      }
+
+      .empresa-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 700;
+        color: white;
+        letter-spacing: 0.4px;
+        flex: 1;
+      }
+
+      ion-badge {
+        font-size: 11px;
+        font-weight: 600;
+      }
+    }
 
     .combustivel-card {
       background: #f5f5f5;
@@ -1865,5 +1940,36 @@ ion-modal {
         }
       }
     }
+  }
+}
+
+// ========== NOME DA EMPRESA NOS CARDS ==========
+
+// Step 3: Nome da empresa no card de preço fixo
+.item-empresa {
+  font-size: 13px;
+  color: #6c5ce7;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  ion-icon {
+    font-size: 14px;
+  }
+}
+
+// Step 4: Nome da empresa no resumo
+.combustivel-empresa {
+  font-size: 13px;
+  color: #6c5ce7;
+  margin: 4px 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+
+  ion-icon {
+    font-size: 14px;
   }
 }
