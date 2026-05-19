@@ -149,6 +149,9 @@ export class LoginPage implements OnInit, AfterViewInit {
   private particles: any[] = [];
   private animationId: number = 0;
 
+  // Event listener do Enter
+  private enterKeyListener: ((event: KeyboardEvent) => void) | null = null;
+
   constructor(
     public router: Router,
     public authservice: AuthService,
@@ -523,12 +526,13 @@ export class LoginPage implements OnInit, AfterViewInit {
       }
     });
 
-    // Detectar tecla Enter para login
-    document.addEventListener("keydown", (event: KeyboardEvent) => {
+    // Detectar tecla Enter para login (armazenar referência para remover depois)
+    this.enterKeyListener = (event: KeyboardEvent) => {
       if (event.key === "Enter" && !this.isLoading) {
         this.login();
       }
-    });
+    };
+    document.addEventListener("keydown", this.enterKeyListener);
   }
 
   private checkConnection(): void {
@@ -575,6 +579,13 @@ export class LoginPage implements OnInit, AfterViewInit {
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
     }
+
+    // Remover event listener do Enter para evitar conflitos em outras páginas
+    if (this.enterKeyListener) {
+      document.removeEventListener("keydown", this.enterKeyListener);
+      this.enterKeyListener = null;
+    }
+
     this.subscriptions.unsubscribe();
   }
 
