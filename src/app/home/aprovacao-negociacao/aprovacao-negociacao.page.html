@@ -63,7 +63,11 @@
           [class.completed]="lote.progresso === lote.total && lote.ind_excluido === 'N'"
         >
           <!-- Card Header -->
-          <div class="card-header">
+          <div
+            class="card-header"
+            [class.clickable]="lote.empresas.length === 1"
+            (click)="lote.empresas.length === 1 && goToHistoricoDetalhe(lote.seq_lote_alteracao, lote.empresas[0].cod_empresa, lote.ind_excluido)"
+          >
             <div class="company-info">
               <div class="company-avatar">
                 <ion-icon name="layers"></ion-icon>
@@ -83,6 +87,11 @@
             <ion-badge *ngIf="lote.empresas.length > 1" color="primary">
               {{lote.empresas.length}}
             </ion-badge>
+            <ion-icon
+              *ngIf="lote.empresas.length === 1"
+              name="chevron-forward-outline"
+              class="arrow-icon"
+            ></ion-icon>
           </div>
 
           <!-- Lista de Empresas (quando múltiplas) -->

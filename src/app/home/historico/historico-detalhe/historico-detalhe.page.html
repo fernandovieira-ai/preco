@@ -74,30 +74,30 @@
                 Preço Atual
               </span>
               <span class="price-value"
-                >R$ {{item.val_preco_venda | number:'1.2-2'}}</span
+                >R$ {{(item.val_preco_venda ?? 0) | number:'1.2-2'}}</span
               >
             </div>
 
             <!-- Novo Preço -->
             <div
               class="price-box new"
-              [class.invalid]="item.valor_calculado < item.val_custo_medio"
+              [class.invalid]="(item.valor_calculado ?? 0) < (item.val_custo_medio ?? 0)"
             >
               <span class="price-label">
                 <ion-icon
-                  [name]="item.valor_calculado >= item.val_custo_medio ? 'checkmark-circle-outline' : 'close-circle-outline'"
+                  [name]="(item.valor_calculado ?? 0) >= (item.val_custo_medio ?? 0) ? 'checkmark-circle-outline' : 'close-circle-outline'"
                 ></ion-icon>
                 Novo Preço
               </span>
               <span class="price-value"
-                >R$ {{item.valor_calculado | number:'1.2-2'}}</span
+                >R$ {{(item.valor_calculado ?? 0) | number:'1.2-2'}}</span
               >
               <span
                 class="price-change"
-                [class.positive]="(item.valor_calculado - item.val_preco_venda) > 0"
-                [class.negative]="(item.valor_calculado - item.val_preco_venda) < 0"
+                [class.positive]="((item.valor_calculado ?? 0) - (item.val_preco_venda ?? 0)) > 0"
+                [class.negative]="((item.valor_calculado ?? 0) - (item.val_preco_venda ?? 0)) < 0"
               >
-                {{item.texto_alteracao}}
+                {{item.texto_alteracao ?? 'R$ 0.00'}}
               </span>
             </div>
 
@@ -108,27 +108,27 @@
                 Custo
               </span>
               <span class="price-value"
-                >R$ {{item.val_custo_medio | number:'1.2-2'}}</span
+                >R$ {{(item.val_custo_medio ?? 0) | number:'1.2-2'}}</span
               >
             </div>
 
             <!-- Margem -->
             <div
               class="price-box margin"
-              [class.low-margin]="item.margem < 10"
-              [class.negative-margin]="item.margem < 0"
+              [class.low-margin]="(item.margem ?? 0) < 10"
+              [class.negative-margin]="(item.margem ?? 0) < 0"
             >
               <span class="price-label">
                 <ion-icon name="trending-up-outline"></ion-icon>
                 Margem
               </span>
               <span class="price-value"
-                >R$ {{item.margem_valor | number:'1.2-2'}}</span
+                >R$ {{(item.margem_valor ?? 0) | number:'1.2-2'}}</span
               >
               <span class="margin-percentage"
-                >{{item.margem | number:'1.1-1'}}%</span
+                >{{(item.margem ?? 0) | number:'1.1-1'}}%</span
               >
-              <span class="margin-indicator" *ngIf="item.margem < 0">⚠️</span>
+              <span class="margin-indicator" *ngIf="(item.margem ?? 0) < 0">⚠️</span>
             </div>
           </div>
 

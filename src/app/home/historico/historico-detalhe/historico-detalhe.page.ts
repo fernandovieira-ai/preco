@@ -60,9 +60,26 @@ export class HistoricoDetalhePage implements OnInit {
         )
         .pipe(
           tap((data) => {
-            console.log(data);
-            this.detalhesNegociacao = data.message.map((item) => {
+            console.log('Dados recebidos da API:', data);
+            this.detalhesNegociacao = data.message.map((item, index) => {
+              // Log para debug de cada item
+              console.log(`Item ${index}:`, {
+                nom_pessoa: item.nom_pessoa,
+                val_preco_venda: item.val_preco_venda,
+                val_custo_medio: item.val_custo_medio,
+                val_preco_venda_a: item.val_preco_venda_a,
+                val_preco_venda_b: item.val_preco_venda_b,
+                val_preco_venda_c: item.val_preco_venda_c,
+                val_preco_venda_d: item.val_preco_venda_d,
+                val_preco_venda_e: item.val_preco_venda_e,
+                ind_tipo_negociacao: item.ind_tipo_negociacao,
+                ind_percentual_valor: item.ind_percentual_valor,
+              });
+
               const novoPreco = this.calcularNovoPreco(item);
+
+              console.log(`Item ${index} - Preço calculado:`, novoPreco);
+
               return {
                 ...item,
                 valor_calculado: novoPreco,
@@ -78,6 +95,8 @@ export class HistoricoDetalhePage implements OnInit {
                 texto_alteracao: this.getTextoAlteracao(item, novoPreco),
               };
             });
+
+            console.log('Detalhes processados:', this.detalhesNegociacao);
           }),
           timeout(51000),
           catchError((err) => {
@@ -198,18 +217,28 @@ export class HistoricoDetalhePage implements OnInit {
   }
 
   calcularNovoPreco(item: minhasNegociacoesDetalhe): number {
-    const precoAtual = item.val_preco_venda;
+    // Validar se o preço atual existe
+    const precoAtual = item.val_preco_venda ?? 0;
+
+    // Buscar o valor informado (o primeiro que não for null/undefined/0)
     const valorInformado =
-      item.val_preco_venda_a ||
-      item.val_preco_venda_b ||
-      item.val_preco_venda_c ||
-      item.val_preco_venda_d ||
-      item.val_preco_venda_e ||
+      item.val_preco_venda_a ??
+      item.val_preco_venda_b ??
+      item.val_preco_venda_c ??
+      item.val_preco_venda_d ??
+      item.val_preco_venda_e ??
       0;
 
-    // Preço Fixo: retorna o valor informado
+    console.log('calcularNovoPreco:', {
+      precoAtual,
+      valorInformado,
+      ind_tipo_negociacao: item.ind_tipo_negociacao,
+      ind_percentual_valor: item.ind_percentual_valor,
+    });
+
+    // Preço Fixo: retorna o valor informado ou o preço atual
     if (item.ind_tipo_negociacao === "P") {
-      return valorInformado || precoAtual;
+      return valorInformado > 0 ? valorInformado : precoAtual;
     }
 
     // Acréscimo ou Desconto
@@ -218,28 +247,36 @@ export class HistoricoDetalhePage implements OnInit {
 
       if (item.ind_percentual_valor === "P") {
         // Percentual: calcular em cima do preço atual
-        return precoAtual + ((precoAtual * valorInformado) / 100) * sinal;
+        const resultado = precoAtual + ((precoAtual * valorInformado) / 100) * sinal;
+        console.log('Cálculo percentual:', { precoAtual, valorInformado, sinal, resultado });
+        return resultado;
       } else {
         // Valor: somar ou subtrair o valor fixo
-        return precoAtual + valorInformado * sinal;
+        const resultado = precoAtual + valorInformado * sinal;
+        console.log('Cálculo valor:', { precoAtual, valorInformado, sinal, resultado });
+        return resultado;
       }
     }
 
+    console.log('Tipo de negociação não reconhecido, retornando preço atual:', precoAtual);
     return precoAtual;
   }
 
   getTextoAlteracao(item: minhasNegociacoesDetalhe, novoPreco: number): string {
     const valorInformado =
-      item.val_preco_venda_a ||
-      item.val_preco_venda_b ||
-      item.val_preco_venda_c ||
-      item.val_preco_venda_d ||
-      item.val_preco_venda_e ||
+      item.val_preco_venda_a ??
+      item.val_preco_venda_b ??
+      item.val_preco_venda_c ??
+      item.val_preco_venda_d ??
+      item.val_preco_venda_e ??
       0;
+
+    const precoAtual = item.val_preco_venda ?? 0;
+    const novoPrecoValidado = novoPreco ?? 0;
 
     // Preço Fixo: mostrar variação em R$
     if (item.ind_tipo_negociacao === "P") {
-      const variacao = novoPreco - item.val_preco_venda;
+      const variacao = novoPrecoValidado - precoAtual;
       return `${variacao > 0 ? "+" : ""}R$ ${variacao.toFixed(2)}`;
     }
 
@@ -260,16 +297,32 @@ export class HistoricoDetalhePage implements OnInit {
   }
 
   calculaMargem(precoVenda: number, custo: number): number {
-    if (!custo || custo === 0) return 0;
-    return ((precoVenda - custo) / precoVenda) * 100;
+    // Validar se os valores são válidos
+    const precoValidado = precoVenda ?? 0;
+    const custoValidado = custo ?? 0;
+
+    if (custoValidado === 0 || precoValidado === 0) {
+      return 0;
+    }
+
+    return ((precoValidado - custoValidado) / precoValidado) * 100;
   }
 
   calculaMargemValor(precoVenda: number, custo: number): number {
-    return precoVenda - custo;
+    const precoValidado = precoVenda ?? 0;
+    const custoValidado = custo ?? 0;
+
+    return precoValidado - custoValidado;
   }
 
   calculaPercentualAlteracao(precoAtual: number, precoNovo: number): number {
-    if (!precoAtual || precoAtual === 0) return 0;
-    return ((precoNovo - precoAtual) / precoAtual) * 100;
+    const atualValidado = precoAtual ?? 0;
+    const novoValidado = precoNovo ?? 0;
+
+    if (atualValidado === 0) {
+      return 0;
+    }
+
+    return ((novoValidado - atualValidado) / atualValidado) * 100;
   }
 }
