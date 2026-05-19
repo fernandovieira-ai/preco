@@ -526,9 +526,16 @@ export class LoginPage implements OnInit, AfterViewInit {
       }
     });
 
+    // Remover listener existente primeiro (caso setupEventListeners seja chamado múltiplas vezes)
+    if (this.enterKeyListener) {
+      document.removeEventListener("keydown", this.enterKeyListener);
+      this.enterKeyListener = null;
+    }
+
     // Detectar tecla Enter para login (armazenar referência para remover depois)
     this.enterKeyListener = (event: KeyboardEvent) => {
-      if (event.key === "Enter" && !this.isLoading) {
+      // Só executar login se estiver na página de login E não estiver carregando
+      if (event.key === "Enter" && !this.isLoading && this.router.url === "/login") {
         this.login();
       }
     };
