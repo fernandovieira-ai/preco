@@ -266,6 +266,7 @@
           <ion-searchbar
             [debounce]="300"
             (ionInput)="pesquisaEmpresa($event)"
+            (keydown.enter)="$event.preventDefault()"
             animated="true"
             placeholder="Buscar por nome ou código"
             class="custom-searchbar"

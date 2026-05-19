@@ -545,6 +545,7 @@
             placeholder="Buscar por código, código de barras ou descrição..."
             debounce="800"
             (ionInput)="filtrarItems()"
+            (keydown.enter)="$event.preventDefault()"
           ></ion-searchbar>
         </ion-toolbar>
       </ion-header>
@@ -625,6 +626,7 @@
             placeholder="Buscar por código, nome ou CNPJ/CPF (mín. 2 caracteres)..."
             debounce="800"
             (ionInput)="filtrarClientes()"
+            (keydown.enter)="$event.preventDefault()"
           ></ion-searchbar>
         </ion-toolbar>
       </ion-header>
@@ -715,6 +717,7 @@
             placeholder="Buscar por código ou descrição..."
             debounce="800"
             (ionInput)="filtrarFormasPagto()"
+            (keydown.enter)="$event.preventDefault()"
           ></ion-searchbar>
         </ion-toolbar>
       </ion-header>

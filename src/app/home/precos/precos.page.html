@@ -804,6 +804,7 @@
           [debounce]="500"
           placeholder="Buscar Forma de Pagamento"
           (ionInput)="filtrarFormaPagto($event)"
+          (keydown.enter)="$event.preventDefault()"
           class="search-bar"
         ></ion-searchbar>
       </ion-toolbar>

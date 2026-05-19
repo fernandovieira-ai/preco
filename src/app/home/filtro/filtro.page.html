@@ -43,7 +43,7 @@
     </ion-item>
   </ion-list>
   <ion-list inset="true" *ngIf="filtro === 'C'">
-    <ion-searchbar color="" [debounce]="1000" (ionInput)="pesquisaCliente($event)" placeholder="Código, CNPJ ou Descrição"></ion-searchbar>
+    <ion-searchbar color="" [debounce]="1000" (ionInput)="pesquisaCliente($event)" (keydown.enter)="$event.preventDefault()" placeholder="Código, CNPJ ou Descrição"></ion-searchbar>
   </ion-list>
   <ion-list inset="true" *ngFor="let item of dataLoad.filtroPessoa" >
     <ion-item color="light" *ngIf="filtro === 'C'">
@@ -291,6 +291,7 @@
           <ion-searchbar
             [debounce]="1000"
             (ionInput)="pesquisaCliente($event)"
+            (keydown.enter)="$event.preventDefault()"
             placeholder="Digite código, CNPJ ou nome do cliente ( + de 3 digitos )"
             animated="true"
             class="custom-searchbar"
@@ -587,6 +588,7 @@
             <ion-searchbar
               [debounce]="300"
               (ionInput)="filtrarItensModal($event)"
+              (keydown.enter)="$event.preventDefault()"
               placeholder="Buscar item..."
               animated="true"
             >

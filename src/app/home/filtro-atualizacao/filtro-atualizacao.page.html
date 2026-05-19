@@ -97,6 +97,7 @@
               class="modern-searchbar"
               [debounce]="1000"
               (ionInput)="pesquisaCliente($event)"
+              (keydown.enter)="$event.preventDefault()"
               placeholder="Código, CNPJ ou Descrição"
               mode="ios"
             ></ion-searchbar>
