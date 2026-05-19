@@ -251,6 +251,7 @@
                 type="date"
                 [(ngModel)]="dataCadastroInicial"
                 placeholder="dd/mm/aaaa"
+                (keydown.enter)="$event.preventDefault()"
               ></ion-input>
             </ion-item>
             <ion-item>
@@ -259,6 +260,7 @@
                 type="date"
                 [(ngModel)]="dataCadastroFinal"
                 placeholder="dd/mm/aaaa"
+                (keydown.enter)="$event.preventDefault()"
               ></ion-input>
             </ion-item>
           </div>

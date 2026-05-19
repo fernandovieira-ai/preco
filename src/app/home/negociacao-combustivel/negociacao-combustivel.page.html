@@ -391,6 +391,7 @@
                           [value]="getPrecoFixoItem(item.cod_item)"
                           (ionInput)="setPrecoFixoItem(item.cod_item, $any($event.target).value)"
                           (ionBlur)="formatarPrecoFixo(item.cod_item, $event)"
+                          (keydown.enter)="$event.preventDefault()"
                           placeholder="0,00"
                           class="preco-input"
                         >
