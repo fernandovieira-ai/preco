@@ -39,7 +39,7 @@ exports.fazerLogin = async (req, res) => {
     FROM
       tab_usuario
     WHERE
-      nom_usuario = $1
+      LOWER(nom_usuario) = LOWER($1)
       AND senha = $2
     AND ind_ativo = 'S'`,
     [nom_usuario, senha],
