@@ -534,7 +534,7 @@ export class HomePage implements OnInit {
     this.movimento
       .buscaEmpresasBase(
         this.auth.userLogado.schema,
-        this.auth.userLogado.cod_empresa_sel,
+        this.auth.userLogado.empresa,  // Usar empresas PERMITIDAS, não selecionadas
       )
       .pipe(
         tap((data: any) => {
