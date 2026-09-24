@@ -669,8 +669,80 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   }
 
   getPrecoAtualItem(item: any): number | null {
-    const preco = item?.val_preco_venda || item?.val_custo_medio || null;
-    return preco;
+    let preco = item?.val_preco_venda;
+
+    // Se não existe, usa custo médio
+    if (preco === null || preco === undefined) {
+      preco = item?.val_custo_medio;
+    }
+
+    // Garantir que retorna número, não string
+    if (preco === null || preco === undefined) {
+      return null;
+    }
+
+    return parseFloat(preco);
+  }
+
+  // Pega o preço baseado no tipo selecionado (A, B, C, D ou E)
+  getPrecoBaseItem(item: any): number | null {
+    if (!this.tipoPrecoSelecionado || this.tipoPrecoSelecionado.length === 0) {
+      return this.getPrecoAtualItem(item);
+    }
+
+    const tipoSelecionado = this.tipoPrecoSelecionado[0].toLowerCase();
+    const campoPreco = `val_preco_venda_${tipoSelecionado}`;
+
+    // Pega o preço do tipo selecionado
+    let preco = item?.[campoPreco];
+
+    // Se o campo não existe (null ou undefined), faz fallback
+    // IMPORTANTE: 0 (zero) é um preço válido, não deve fazer fallback!
+    if (preco === null || preco === undefined) {
+      preco = item?.val_preco_venda;
+    }
+
+    if (preco === null || preco === undefined) {
+      preco = item?.val_custo_medio;
+    }
+
+    // Garantir que retorna número, não string
+    if (preco === null || preco === undefined) {
+      return null;
+    }
+
+    return parseFloat(preco);
+  }
+
+  // Retorna o preço que deve ser exibido no resumo (depende do tipo de negociação)
+  getPrecoParaExibicao(item: any): number | null {
+    if (this.tipoNegociacao === "fixo") {
+      return this.getPrecoAtualItem(item);
+    }
+    // Para desconto/acréscimo, mostra o preço do tipo base selecionado
+    return this.getPrecoBaseItem(item);
+  }
+
+  // Verifica se o tipo de preço selecionado tem valor
+  verificarPrecoBaseDisponivel(item: any): void {
+    if (!this.tipoPrecoSelecionado || this.tipoPrecoSelecionado.length === 0) {
+      return;
+    }
+
+    const tipoSelecionado = this.tipoPrecoSelecionado[0];
+    const campoPreco = `val_preco_venda_${tipoSelecionado.toLowerCase()}`;
+    const preco = item?.[campoPreco];
+
+    // Avisar se o preço do tipo selecionado não está cadastrado
+    if (preco === null || preco === undefined || preco === 0) {
+      const nomeTipo = this.tiposPreco.find(t => t.codigo === tipoSelecionado)?.nome || `Preço ${tipoSelecionado}`;
+      const nomeItem = item?.des_item || item?.nom_item || 'Item';
+
+      this.alert.presentToast(
+        `${nomeTipo} não cadastrado para ${nomeItem}. Será usado preço padrão como base.`,
+        4000
+      );
+    }
   }
 
   limparPrecosFixos() {
@@ -881,7 +953,13 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       return;
     }
 
-    // 4. Criar registros de negociação para cada combustível e forma de pagamento
+    // 4. Verificar se tipos de preço selecionados estão disponíveis
+    if (this.tipoNegociacao !== "fixo" && this.combustiveisSelecionados.length > 0) {
+      // Verificar apenas o primeiro item como exemplo
+      this.verificarPrecoBaseDisponivel(this.combustiveisSelecionados[0]);
+    }
+
+    // 5. Criar registros de negociação para cada combustível e forma de pagamento
     console.log("=== DEBUG CRIAÇÃO DE NEGOCIAÇÃO COMBUSTÍVEL ===");
     console.log("Total combustíveis selecionados:", this.combustiveisSelecionados.length);
 
@@ -912,12 +990,13 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           valorCalculado =
             this.precosFixosPorItem.get(item.cod_item) || precoAtual;
         } else {
-          // Desconto ou acréscimo
+          // Desconto ou acréscimo - usa o preço base correto
+          const precoBase = this.getPrecoBaseItem(item) || 0;
           valorCalculado = this.calculaValor(
             this.tipoNegociacao === "acrescimo" ? "A" : "D",
             this.valorReais || 0,
             this.valorPercentual || 0,
-            precoAtual,
+            precoBase,
           );
         }
 
@@ -948,7 +1027,7 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
                 ? "D"
                 : "P",
           ind_percentual_valor: percentualValor,
-          ind_tipo_preco_base: "A",
+          ind_tipo_preco_base: this.tipoPrecoSelecionado[0] || "A",
           nom_pessoa: "",
           ind_adicionado: true,
           val_preco_venda: precoAtual,
@@ -965,17 +1044,18 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
           ),
         };
 
-        // Aplicar regras de preço para cada tipo selecionado
-        this.tipoPrecoSelecionado.forEach((tp) => {
-          const campo = `val_preco_venda_${tp.toLowerCase()}`;
-          // Para Preço Fixo (P), salva o valor calculado
-          // Para Desconto (D) ou Acréscimo (A), salva o valor informado
-          if (negociacao.ind_tipo_negociacao === "P") {
+        // Aplicar regras de preço
+        if (this.tipoNegociacao === "fixo") {
+          // Preço Fixo: salva o valor calculado em cada tipo selecionado
+          this.tipoPrecoSelecionado.forEach((tp) => {
+            const campo = `val_preco_venda_${tp.toLowerCase()}`;
             negociacao[campo] = valorCalculado;
-          } else {
-            negociacao[campo] = this.valorReais || this.valorPercentual || 0;
-          }
-        });
+          });
+        } else {
+          // Desconto/Acréscimo: SEMPRE salva o valor em val_preco_venda_a
+          // ind_tipo_preco_base define qual preço usar como base (A, B, C, D ou E)
+          negociacao.val_preco_venda_a = this.valorReais || this.valorPercentual || 0;
+        }
 
         negociacaoNova.push(negociacao);
       });
@@ -1164,38 +1244,53 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
   // ========== CÁLCULOS PARA RESUMO ==========
 
   calcularNovoPreco(item: any): number {
-    const precoAtual = this.getPrecoAtualItem(item) || 0;
+    // Para desconto/acréscimo, usa o preço do tipo selecionado (A, B, C, D ou E)
+    // Para preço fixo, usa o preço padrão (A)
+    const precoBase = this.tipoNegociacao === "fixo"
+      ? this.getPrecoAtualItem(item) || 0
+      : this.getPrecoBaseItem(item) || 0;
 
     if (this.tipoNegociacao === "fixo") {
       // Para preço fixo, retorna o preço definido para este item
-      return this.precosFixosPorItem.get(item.cod_item) || precoAtual;
+      return this.precosFixosPorItem.get(item.cod_item) || precoBase;
     } else if (this.tipoNegociacao === "desconto") {
-      // Desconto diminui o preço
+      // Desconto diminui o preço BASE selecionado
       if (this.valorReais) {
-        return precoAtual - this.valorReais;
+        return precoBase - this.valorReais;
       } else if (this.valorPercentual) {
-        return precoAtual - (precoAtual * this.valorPercentual) / 100;
+        return precoBase - (precoBase * this.valorPercentual) / 100;
       }
     } else if (this.tipoNegociacao === "acrescimo") {
-      // Acréscimo aumenta o preço
+      // Acréscimo aumenta o preço BASE selecionado
       if (this.valorReais) {
-        return precoAtual + this.valorReais;
+        return precoBase + this.valorReais;
       } else if (this.valorPercentual) {
-        return precoAtual + (precoAtual * this.valorPercentual) / 100;
+        return precoBase + (precoBase * this.valorPercentual) / 100;
       }
     }
 
-    return precoAtual;
+    return precoBase;
   }
 
   calcularDiferencaPreco(item: any): number {
-    const precoAtual = this.getPrecoAtualItem(item) || 0;
+    // Usa o preço base selecionado para calcular a diferença
+    const precoBase = this.tipoNegociacao === "fixo"
+      ? this.getPrecoAtualItem(item) || 0
+      : this.getPrecoBaseItem(item) || 0;
     const novoPreco = this.calcularNovoPreco(item);
-    return novoPreco - precoAtual;
+    return novoPreco - precoBase;
   }
 
   getCustoItem(item: any): number {
-    return item?.val_custo_medio || 0;
+    const custo = item?.val_custo_medio;
+
+    // Se não existe, retorna 0
+    if (custo === null || custo === undefined) {
+      return 0;
+    }
+
+    // Garantir que retorna número, não string
+    return parseFloat(custo);
   }
 
   calcularMargem(item: any): number {

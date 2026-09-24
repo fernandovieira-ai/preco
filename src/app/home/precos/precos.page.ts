@@ -685,48 +685,52 @@ export class PrecosPage implements OnInit {
 
               // 3. Aplica regras de preço
               this.negociacaoNova.forEach((row) => {
-                this.tipoPreco.forEach((tp) => {
-                  row.ind_adicionado = true;
-                  row.ind_tipo_negociacao = this.tipoNegociacao;
-                  row.ind_percentual_valor = percentualValor;
-                  row.valor = this.valor > 0 ? this.valor : this.percentual;
-                  row.valor_calculado = this.calculaValor(
-                    this.tipoNegociacao,
-                    this.valor,
-                    this.percentual,
-                    row.val_preco_venda,
-                  );
-                  this.aplicarRegraPreco(
-                    row,
-                    `val_preco_venda_${tp.toLowerCase()}`,
-                  );
+                row.ind_adicionado = true;
+                row.ind_tipo_negociacao = this.tipoNegociacao;
+                row.ind_percentual_valor = percentualValor;
+                row.valor = this.valor > 0 ? this.valor : this.percentual;
 
-                  // LOG: Verificar valores APÓS aplicarRegraPreco
-                    ind_tipo_negociacao: row.ind_tipo_negociacao,
-                    ind_percentual_valor: row.ind_percentual_valor,
-                    val_preco_venda_a: row.val_preco_venda_a,
-                    val_preco_venda_b: row.val_preco_venda_b,
-                    valor_informado: row.valor,
-                    valor_calculado: row.valor_calculado,
-                    this_valor: this.valor,
-                    this_percentual: this.percentual,
+                // Define o tipo de preço base (qual preço usar como referência)
+                row.ind_tipo_preco_base = this.tipoPreco[0] || "A";
+
+                // Pega o preço base correto para o cálculo
+                const tipoBase = row.ind_tipo_preco_base.toLowerCase();
+                const campoPrecoBase = `val_preco_venda_${tipoBase}`;
+                const precoBase = row[campoPrecoBase] || row.val_preco_venda || 0;
+
+                row.valor_calculado = this.calculaValor(
+                  this.tipoNegociacao,
+                  this.valor,
+                  this.percentual,
+                  precoBase,
+                );
+
+                if (this.tipoNegociacao === "P") {
+                  // Preço Fixo: salva o valor calculado em cada tipo selecionado
+                  this.tipoPreco.forEach((tp) => {
+                    const campo = `val_preco_venda_${tp.toLowerCase()}`;
+                    row[campo] = row.valor_calculado;
                   });
+                } else {
+                  // Desconto/Acréscimo: SEMPRE salva o valor em val_preco_venda_a
+                  // ind_tipo_preco_base define qual preço usar como base (A, B, C, D ou E)
+                  row.val_preco_venda_a = this.valor > 0 ? this.valor : this.percentual;
+                }
 
-                  row.valor_valido =
-                    row.valor_calculado < row.val_custo_medio ? false : true;
-                  row.margem = this.calculaMargem(
-                    row.valor_calculado,
-                    row.val_custo_medio,
-                  );
-                  row.margem_valor = this.calculaMargemValor(
-                    row.valor_calculado,
-                    row.val_custo_medio,
-                  );
-                  row.percentual_alteracao = this.calculaPercentualAlteracao(
-                    row.val_preco_venda,
-                    row.valor_calculado,
-                  );
-                });
+                row.valor_valido =
+                  row.valor_calculado < row.val_custo_medio ? false : true;
+                row.margem = this.calculaMargem(
+                  row.valor_calculado,
+                  row.val_custo_medio,
+                );
+                row.margem_valor = this.calculaMargemValor(
+                  row.valor_calculado,
+                  row.val_custo_medio,
+                );
+                row.percentual_alteracao = this.calculaPercentualAlteracao(
+                  row.val_preco_venda,
+                  row.valor_calculado,
+                );
               });
             } else {
               this.alert.presentToast("OperaÃ§Ã£o Cancelada", 2000);
@@ -770,48 +774,53 @@ export class PrecosPage implements OnInit {
         // 3. Aplica regras de preço
         this.negociacaoNova.forEach((row) => {
           if (existentesSet.has(row.cod_item)) return;
-          this.tipoPreco.forEach((tp) => {
-            row.ind_adicionado = true;
-            row.ind_tipo_negociacao = this.tipoNegociacao;
-            row.ind_percentual_valor = percentualValor;
-            row.valor = this.valor > 0 ? this.valor : this.percentual;
-            row.valor_calculado = this.calculaValor(
-              this.tipoNegociacao,
-              this.valor,
-              this.percentual,
-              row.val_preco_venda,
-            );
-            this.aplicarRegraPreco(row, `val_preco_venda_${tp.toLowerCase()}`);
 
-            // LOG: Verificar valores APÓS aplicarRegraPreco (bloco 2)
-              `🔍 BLOCO2 APÓS aplicarRegraPreco - Tipo Preço: ${tp}`,
-              {
-                ind_tipo_negociacao: row.ind_tipo_negociacao,
-                ind_percentual_valor: row.ind_percentual_valor,
-                val_preco_venda_a: row.val_preco_venda_a,
-                val_preco_venda_b: row.val_preco_venda_b,
-                valor_informado: row.valor,
-                valor_calculado: row.valor_calculado,
-                this_valor: this.valor,
-                this_percentual: this.percentual,
-              },
-            );
+          row.ind_adicionado = true;
+          row.ind_tipo_negociacao = this.tipoNegociacao;
+          row.ind_percentual_valor = percentualValor;
+          row.valor = this.valor > 0 ? this.valor : this.percentual;
 
-            row.valor_valido =
-              row.valor_calculado < row.val_custo_medio ? false : true;
-            row.margem = this.calculaMargem(
-              row.valor_calculado,
-              row.val_custo_medio,
-            );
-            row.margem_valor = this.calculaMargemValor(
-              row.valor_calculado,
-              row.val_custo_medio,
-            );
-            row.percentual_alteracao = this.calculaPercentualAlteracao(
-              row.val_preco_venda,
-              row.valor_calculado,
-            );
-          });
+          // Define o tipo de preço base (qual preço usar como referência)
+          row.ind_tipo_preco_base = this.tipoPreco[0] || "A";
+
+          // Pega o preço base correto para o cálculo
+          const tipoBase = row.ind_tipo_preco_base.toLowerCase();
+          const campoPrecoBase = `val_preco_venda_${tipoBase}`;
+          const precoBase = row[campoPrecoBase] || row.val_preco_venda || 0;
+
+          row.valor_calculado = this.calculaValor(
+            this.tipoNegociacao,
+            this.valor,
+            this.percentual,
+            precoBase,
+          );
+
+          if (this.tipoNegociacao === "P") {
+            // Preço Fixo: salva o valor calculado em cada tipo selecionado
+            this.tipoPreco.forEach((tp) => {
+              const campo = `val_preco_venda_${tp.toLowerCase()}`;
+              row[campo] = row.valor_calculado;
+            });
+          } else {
+            // Desconto/Acréscimo: SEMPRE salva o valor em val_preco_venda_a
+            // ind_tipo_preco_base define qual preço usar como base (A, B, C, D ou E)
+            row.val_preco_venda_a = this.valor > 0 ? this.valor : this.percentual;
+          }
+
+          row.valor_valido =
+            row.valor_calculado < row.val_custo_medio ? false : true;
+          row.margem = this.calculaMargem(
+            row.valor_calculado,
+            row.val_custo_medio,
+          );
+          row.margem_valor = this.calculaMargemValor(
+            row.valor_calculado,
+            row.val_custo_medio,
+          );
+          row.percentual_alteracao = this.calculaPercentualAlteracao(
+            row.val_preco_venda,
+            row.valor_calculado,
+          );
         });
       }
     } else {
@@ -835,32 +844,12 @@ export class PrecosPage implements OnInit {
     );
   }
 
+  // FUNÇÃO DESCONTINUADA - Mantida para compatibilidade
+  // A lógica de salvamento foi movida para o método aplicarRegra()
+  // Para desconto/acréscimo: sempre salva em val_preco_venda_a
+  // Para preço fixo: salva em cada tipo selecionado
   aplicarRegraPreco(row: any, campo: string) {
-    const tipo = campo.substr(-1);
-
-    // SEMPRE salva o valor informado (não o calculado)
-    // O cálculo (valor_calculado) é apenas para exibição no resumo
-    // ind_tipo_negociacao define se é P (Preço Fixo), A (Acréscimo) ou D (Desconto)
-    // ind_percentual_valor define se é P (Percentual) ou V (Valor)
-
-      this_valor: this.valor,
-      this_percentual: this.percentual,
-      valor_que_sera_salvo: this.valor > 0 ? this.valor : this.percentual,
-      row_campo_antes: row[campo],
-    });
-
     row[campo] = this.valor > 0 ? this.valor : this.percentual;
-
-      row_campo_depois: row[campo],
-      row_valor_calculado: row.valor_calculado,
-      row_todas_as_props: {
-        val_preco_venda_a: row.val_preco_venda_a,
-        val_preco_venda_b: row.val_preco_venda_b,
-        val_preco_venda_c: row.val_preco_venda_c,
-        val_preco_venda_d: row.val_preco_venda_d,
-        val_preco_venda_e: row.val_preco_venda_e,
-      },
-    });
   }
 
   calculaValor(tipo, valor, percentual, valorVenda) {

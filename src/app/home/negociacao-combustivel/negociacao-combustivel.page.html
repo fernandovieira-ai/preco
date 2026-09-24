@@ -488,11 +488,11 @@
             </h4>
 
             <div class="preco-grid">
-            <!-- Preço Atual -->
+            <!-- Preço Base -->
             <div class="preco-box preco-atual-box">
-              <div class="preco-label">PREÇO ATUAL</div>
+              <div class="preco-label">PREÇO BASE</div>
               <div class="preco-valor">
-                R$ {{ (getPrecoAtualItem(combustivel) || 0).toFixed(2) }}
+                R$ {{ (getPrecoParaExibicao(combustivel) || 0).toFixed(2) }}
               </div>
             </div>
 
