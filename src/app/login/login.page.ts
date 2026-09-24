@@ -282,7 +282,7 @@ export class LoginPage implements OnInit, AfterViewInit {
     this.authservice
       .loginUser(this.user.nom_usuario, senhaHash)
       .pipe(
-        timeout(11000),
+        timeout(30000), // Aumentado de 11s para 30s
         catchError((error) => {
           this.handleLoginError(error);
           return throwError(error);
