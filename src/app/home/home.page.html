@@ -395,12 +395,12 @@
     </ng-template>
   </ion-modal>
 
-  <!-- Modal de Usuários (Admin) -->
+  <!-- Modal de Administradores (área restrita — quem acessa Autonomia de Descontos) -->
   <ion-modal [isOpen]="isModalOpenUser" mode="ios" class="users-modal">
     <ng-template>
       <ion-header>
         <ion-toolbar class="modal-toolbar">
-          <ion-title>Gerenciar Usuários</ion-title>
+          <ion-title>Administradores</ion-title>
           <ion-buttons slot="end">
             <ion-button (click)="setOpen(false)">
               <ion-icon slot="icon-only" name="close"></ion-icon>
@@ -410,106 +410,111 @@
       </ion-header>
 
       <ion-content class="modal-content">
-        <!-- Formulário Novo Usuário -->
-        <div class="section-card">
-          <div class="section-header">
-            <ion-icon name="person-add-outline"></ion-icon>
-            <h2>Novo Usuário</h2>
+        <!-- Área restrita: pede a senha de login antes de mostrar qualquer coisa -->
+        <div class="login-container" *ngIf="!adminAutenticado">
+          <div class="login-card">
+            <ion-icon name="shield-checkmark-outline"></ion-icon>
+            <h2>Área Restrita</h2>
+            <p>Digite sua senha de login para configurar quem tem acesso de administrador</p>
+
+            <div class="senha-field">
+              <input
+                [type]="mostrarSenhaAdmin ? 'text' : 'password'"
+                [(ngModel)]="senhaAdminLogin"
+                placeholder="Sua senha de login"
+                (keyup.enter)="confirmarSenhaAdmin()"
+                [disabled]="autenticandoAdmin"
+                autocomplete="current-password"
+              />
+              <ion-icon
+                [name]="mostrarSenhaAdmin ? 'eye-off-outline' : 'eye-outline'"
+                (click)="toggleMostrarSenhaAdmin()"
+              ></ion-icon>
+            </div>
+
+            <ion-button expand="block" (click)="confirmarSenhaAdmin()" [disabled]="autenticandoAdmin">
+              {{ autenticandoAdmin ? 'Validando...' : 'Entrar' }}
+            </ion-button>
           </div>
-
-          <ion-item lines="none" class="input-item">
-            <ion-label position="stacked">Nome de Usuário</ion-label>
-            <ion-input
-              [(ngModel)]="novoUsuario.nom_usuario"
-              placeholder="Digite o nome do usuário"
-              type="text"
-              (keydown.enter)="$event.preventDefault()"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item lines="none" class="input-item">
-            <ion-label position="stacked"
-              >Senha (mínimo 10 caracteres)</ion-label
-            >
-            <ion-input
-              [(ngModel)]="novoUsuario.senha"
-              placeholder="Digite a senha"
-              type="password"
-              minlength="10"
-              (keydown.enter)="$event.preventDefault()"
-            ></ion-input>
-          </ion-item>
-
-          <ion-item lines="none" class="toggle-item">
-            <ion-label>Aprovação de Negociação</ion-label>
-            <ion-toggle
-              [(ngModel)]="novoUsuario.ind_aprova_negociacao_bool"
-              (ionChange)="setAprovaNegociacao($event)"
-            ></ion-toggle>
-          </ion-item>
-
-          <ion-button
-            expand="block"
-            class="primary-button"
-            (click)="insertUser()"
-            [disabled]="!novoUsuario.nom_usuario || !novoUsuario.senha || novoUsuario.senha.length < 10"
-          >
-            <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-            Criar Usuário
-          </ion-button>
         </div>
 
-        <!-- Lista de Usuários -->
-        <div class="section-card">
-          <div class="section-header">
-            <ion-icon name="people-outline"></ion-icon>
-            <h2>Usuários Cadastrados</h2>
-          </div>
+        <ng-container *ngIf="adminAutenticado">
+          <!-- Buscar usuário existente (já sincronizado do EMSys3) para dar acesso -->
+          <div class="section-card">
+            <div class="section-header">
+              <ion-icon name="person-add-outline"></ion-icon>
+              <h2>Conceder Acesso</h2>
+            </div>
 
-          <div
-            *ngIf="listaDeUsuarios && listaDeUsuarios.length > 0"
-            class="users-list"
-          >
-            <ion-card *ngFor="let user of listaDeUsuarios" class="user-card">
-              <ion-card-content>
-                <div class="user-info">
-                  <div class="user-details">
-                    <div class="user-name">
-                      <ion-icon name="person-circle-outline"></ion-icon>
-                      <strong>{{ user.nom_usuario }}</strong>
+            <ion-item lines="none" class="input-item">
+              <ion-label position="stacked">Buscar usuário pelo nome</ion-label>
+              <ion-input
+                [(ngModel)]="buscaAdminTexto"
+                (ionInput)="buscarUsuarioParaAdmin()"
+                placeholder="Digite ao menos 3 letras"
+                debounce="300"
+              ></ion-input>
+            </ion-item>
+
+            <div class="users-list" *ngIf="resultadosBuscaAdmin.length > 0">
+              <ion-card *ngFor="let u of resultadosBuscaAdmin" class="user-card">
+                <ion-card-content>
+                  <div class="user-info">
+                    <div class="user-details">
+                      <div class="user-name">
+                        <ion-icon name="person-circle-outline"></ion-icon>
+                        <strong>{{ u.nom_usuario }}</strong>
+                      </div>
                     </div>
-                    <div
-                      class="user-permission"
-                      *ngIf="user.ind_aprova_negociacao === 'S'"
-                    >
-                      <ion-icon
-                        name="checkmark-circle"
-                        color="success"
-                      ></ion-icon>
-                      <span>Aprovador</span>
-                    </div>
+                    <ion-button fill="clear" size="small" (click)="adicionarComoAdmin(u)">
+                      <ion-icon slot="icon-only" name="add-circle-outline"></ion-icon>
+                    </ion-button>
                   </div>
-                  <ion-button
-                    fill="clear"
-                    color="danger"
-                    size="small"
-                    (click)="removeUser(user)"
-                  >
-                    <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-                  </ion-button>
-                </div>
-              </ion-card-content>
-            </ion-card>
+                </ion-card-content>
+              </ion-card>
+            </div>
           </div>
 
-          <div
-            *ngIf="!listaDeUsuarios || listaDeUsuarios.length === 0"
-            class="empty-state"
-          >
-            <ion-icon name="people-outline"></ion-icon>
-            <p>Nenhum usuário cadastrado</p>
+          <!-- Lista de administradores atuais -->
+          <div class="section-card">
+            <div class="section-header">
+              <ion-icon name="shield-checkmark-outline"></ion-icon>
+              <h2>Administradores Atuais</h2>
+            </div>
+
+            <div class="users-list" *ngIf="listaAdmins.length > 0">
+              <ion-card *ngFor="let a of listaAdmins" class="user-card">
+                <ion-card-content>
+                  <div class="user-info">
+                    <div class="user-details">
+                      <div class="user-name">
+                        <ion-icon name="person-circle-outline"></ion-icon>
+                        <strong>{{ a.nom_usuario }}</strong>
+                      </div>
+                      <div class="user-permission" *ngIf="a.qtd_acessos">
+                        <ion-icon name="time-outline"></ion-icon>
+                        <span>{{ a.qtd_acessos }} acesso(s)</span>
+                      </div>
+                    </div>
+                    <ion-button
+                      fill="clear"
+                      color="danger"
+                      size="small"
+                      (click)="removerAdmin(a)"
+                    >
+                      <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                    </ion-button>
+                  </div>
+                </ion-card-content>
+              </ion-card>
+            </div>
+
+            <div class="empty-state" *ngIf="listaAdmins.length === 0">
+              <ion-icon name="people-outline"></ion-icon>
+              <p>Nenhum administrador cadastrado</p>
+            </div>
           </div>
-        </div>
+        </ng-container>
       </ion-content>
     </ng-template>
   </ion-modal>

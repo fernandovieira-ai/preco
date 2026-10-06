@@ -54,6 +54,20 @@ export interface UsuarioGrupoBusca {
   }[];
 }
 
+export interface AdminPerfil {
+  cod_usuario: number;
+  nom_usuario: string;
+  ind_ativo: "S" | "N";
+  dta_cadastro: string;
+  dta_ultimo_acesso: string | null;
+  qtd_acessos: number;
+}
+
+export interface UsuarioBuscaSimples {
+  cod_usuario: number;
+  nom_usuario: string;
+}
+
 export interface HistoricoConfigGrupo {
   seq_historico: number;
   cod_grupo: number;
@@ -318,6 +332,70 @@ export class AutonomiaService {
   historicoConfigGrupo(schema: string, cod_grupo: number): Observable<{ message: HistoricoConfigGrupo[] }> {
     return this.httpClient
       .post<{ message: HistoricoConfigGrupo[] }>(`${this.baseURL}/historicoConfigGrupo`, { schema, cod_grupo })
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  // ---------------------------------------------------------------------
+  // Administradores do sistema (quem acessa a tela de autonomia)
+  // ---------------------------------------------------------------------
+
+  listarAdminsAutonomia(schema: string): Observable<{ message: AdminPerfil[] }> {
+    return this.httpClient
+      .post<{ message: AdminPerfil[] }>(`${this.baseURL}/listarAdminsAutonomia`, { schema })
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  // Busca usuário ATIVO já sincronizado do EMSys3 — nunca cria usuário novo.
+  buscarUsuarioParaAdmin(schema: string, busca: string): Observable<{ message: UsuarioBuscaSimples[] }> {
+    return this.httpClient
+      .post<{ message: UsuarioBuscaSimples[] }>(`${this.baseURL}/buscarUsuarioParaAdmin`, { schema, busca })
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  adicionarAdminAutonomia(
+    schema: string,
+    usuario: UsuarioBuscaSimples,
+    admin: { cod_usuario: number; nom_usuario: string },
+  ): Observable<any> {
+    const body = {
+      schema,
+      cod_usuario: usuario.cod_usuario,
+      nom_usuario: usuario.nom_usuario,
+      cod_usuario_admin: admin.cod_usuario,
+    };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/adicionarAdminAutonomia`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  removerAdminAutonomia(
+    schema: string,
+    cod_usuario: number,
+    admin: { cod_usuario: number; nom_usuario: string },
+  ): Observable<any> {
+    const body = { schema, cod_usuario, cod_usuario_admin: admin.cod_usuario };
+    return this.httpClient
+      .post<any>(`${this.baseURL}/removerAdminAutonomia`, body)
       .pipe(
         take(1),
         catchError((err) => {

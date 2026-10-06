@@ -36,6 +36,8 @@ router.post("/buscaFiltroPreLoad", drfPriceSwap.buscaFiltroPreLoad);
 
 router.post("/buscaFiltro", drfPriceSwap.buscaFiltro);
 
+router.post("/buscaClientesFiltro", drfPriceSwap.buscaClientesFiltro);
+
 router.post("/atualizaCustoPrecoPorItens", drfPriceSwap.atualizaCustoPrecoPorItens);
 
 router.post("/buscaCustoPrecoItens", drfPriceSwap.buscaCustoPrecoItens);
@@ -106,6 +108,12 @@ router.post("/atualizarPerfilGrupo", drfPriceSwap.atualizarPerfilGrupo);
 router.post("/desativarPerfilGrupo", drfPriceSwap.desativarPerfilGrupo);
 
 router.post("/historicoConfigGrupo", drfPriceSwap.historicoConfigGrupo);
+
+//=> Administradores do sistema (quem acessa a tela de autonomia)
+router.post("/listarAdminsAutonomia", drfPriceSwap.listarAdminsAutonomia);
+router.post("/buscarUsuarioParaAdmin", drfPriceSwap.buscarUsuarioParaAdmin);
+router.post("/adicionarAdminAutonomia", drfPriceSwap.adicionarAdminAutonomia);
+router.post("/removerAdminAutonomia", drfPriceSwap.removerAdminAutonomia);
 
 router.post("/buscaPrecoIntervalo", drfPriceSwap.buscaPrecoIntervalo);
 

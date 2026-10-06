@@ -4,11 +4,12 @@ import { MovimentoService } from "../services/movimento.service";
 import { IonModal, LoadingController, Platform } from "@ionic/angular";
 import { Alert } from "../class/alert";
 import { catchError, finalize, tap, timeout } from "rxjs";
-import { empresa, newUser, user } from "../class/user";
+import { empresa } from "../class/user";
 import { ActivatedRoute, Router } from "@angular/router";
 import { Location } from "@angular/common";
 import { WebsocketService } from "../services/websocket.service";
 import { DataloadService } from "../services/dataload.service";
+import { AutonomiaService, AdminPerfil, UsuarioBuscaSimples } from "../services/autonomia.service";
 
 @Component({
   selector: "app-home",
@@ -22,12 +23,20 @@ export class HomePage implements OnInit {
   isModalOpenUser = false;
   isSyncInProgress = false;
 
-  public novoUsuario: newUser = new newUser();
-  public listaDeUsuarios: user[] = [];
-
   public empresas: empresa[] = [];
   public empresasFiltradas: empresa[] = [];
   public empresaSel = "Selecione";
+
+  // Modal "Usuários": área restrita para configurar quem tem acesso de
+  // administrador (tbl_admin_perfis) — nunca cria usuário, só concede/
+  // revoga acesso a quem já existe (sincronizado do EMSys3).
+  adminAutenticado = false;
+  senhaAdminLogin = "";
+  mostrarSenhaAdmin = false;
+  autenticandoAdmin = false;
+  listaAdmins: AdminPerfil[] = [];
+  buscaAdminTexto = "";
+  resultadosBuscaAdmin: UsuarioBuscaSimples[] = [];
 
   constructor(
     public auth: AuthService,
@@ -39,6 +48,7 @@ export class HomePage implements OnInit {
     private movimento: MovimentoService,
     private alert: Alert,
     public dataLoad: DataloadService,
+    private autonomiaService: AutonomiaService,
   ) {}
 
   ngOnInit() {
@@ -206,141 +216,112 @@ export class HomePage implements OnInit {
     }
   }
 
-  criarCadastroUsuario() {
-    const {
-      nom_usuario,
-      senha,
-      schema,
-      des_rede,
-      img_rede,
-      ind_aprova_negociacao,
-    } = this.novoUsuario;
-
-    if (senha.toString().length < 10) {
-      this.movimento
-        .novoUsuario(
-          nom_usuario,
-          senha,
-          schema,
-          des_rede,
-          img_rede,
-          ind_aprova_negociacao,
-        )
-        .pipe(
-          tap((data) => {
-            this.alert.presentToast(data.message, 3000);
-            this.novoUsuario = new newUser();
-          }),
-          timeout(51000),
-          catchError((err) => {
-            this.handleError(err);
-            throw err;
-          }),
-        )
-        .subscribe(() => {
-          this.buscaUsuarios();
-        });
-    }
-  }
-
-  removeUser(item) {
-    this.movimento
-      .removeUsuario(item.cod_usuario, this.auth.userLogado.schema)
-      .pipe(
-        tap((data) => {
-          this.alert.presentToast(data.message, 3000);
-          this.novoUsuario = new newUser();
-        }),
-        timeout(51000),
-        catchError((err) => {
-          this.handleError(err);
-          throw err;
-        }),
-      )
-      .subscribe(() => {
-        this.buscaUsuarios();
-      });
-  }
-
-  buscaUsuarios() {
-    this.movimento
-      .buscaUsuario(this.auth.userLogado.schema)
-      .pipe(
-        tap((data) => {
-          // Ordena: primeiro ind_aprova_negociacao='S', depois ordem alfabética
-          this.listaDeUsuarios = data.message.sort((a: user, b: user) => {
-            // Se um tem aprovação e outro não, o que tem aprovação vem primeiro
-            if (
-              a.ind_aprova_negociacao === "S" &&
-              b.ind_aprova_negociacao !== "S"
-            ) {
-              return -1;
-            }
-            if (
-              a.ind_aprova_negociacao !== "S" &&
-              b.ind_aprova_negociacao === "S"
-            ) {
-              return 1;
-            }
-            // Se ambos têm ou ambos não têm aprovação, ordena por nome
-            return a.nom_usuario.localeCompare(b.nom_usuario);
-          });
-        }),
-        timeout(51000),
-        catchError((err) => {
-          this.handleError(err);
-          throw err;
-        }),
-      )
-      .subscribe(() => {});
-  }
-
   abrirUsuarios() {
-    const schema = this.auth.userLogado.schema;
-
-    console.log("Atualizando usuários do schema:", schema);
-
-    // Abre o modal imediatamente
     this.setOpen(true);
-
-    // Atualiza os usuários em background
-    this.movimento.atualizaUsuarios(schema).subscribe({
-      next: (data) => {
-        console.log("Usuários atualizados com sucesso:", data);
-        // Recarrega a lista após atualizar
-        this.buscaUsuarios();
-      },
-      error: (err) => {
-        console.error("Erro ao atualizar usuários:", err);
-      },
-    });
   }
 
   setOpen(isOpen: boolean) {
     this.isModalOpenUser = isOpen;
-    this.novoUsuario.des_rede = this.auth.userLogado.des_rede;
-    this.novoUsuario.img_rede = this.auth.userLogado.img_rede;
-    this.novoUsuario.schema = this.auth.userLogado.schema;
 
-    // Define o toggle baseado no usuário logado
-    if (this.auth.userLogado.ind_aprova_negociacao === "S") {
-      this.novoUsuario.ind_aprova_negociacao = "S";
-      this.novoUsuario.ind_aprova_negociacao_bool = true;
-    } else {
-      this.novoUsuario.ind_aprova_negociacao = "N";
-      this.novoUsuario.ind_aprova_negociacao_bool = false;
+    if (isOpen && this.autonomiaService.isAdminAutenticado()) {
+      // Sessão já autenticada nessa aba (ex: já abriu a tela de Autonomia
+      // de Descontos antes) — não pede senha de novo.
+      this.adminAutenticado = true;
+      this.carregarAdmins();
     }
-
-    this.buscaUsuarios();
   }
 
-  setAprovaNegociacao(ev) {
-    const status = ev.detail.checked;
-    if (status) {
-      this.novoUsuario.ind_aprova_negociacao = "S";
-    } else {
-      this.novoUsuario.ind_aprova_negociacao = "N";
+  // ---------------------------------------------------------------------
+  // Área restrita: configurar quem tem acesso de administrador
+  // ---------------------------------------------------------------------
+
+  toggleMostrarSenhaAdmin() {
+    this.mostrarSenhaAdmin = !this.mostrarSenhaAdmin;
+  }
+
+  confirmarSenhaAdmin() {
+    if (!this.senhaAdminLogin || this.senhaAdminLogin.trim() === "") {
+      this.alert.presentToast("Digite sua senha de login", 2000);
+      return;
     }
+
+    this.autenticandoAdmin = true;
+
+    this.autonomiaService
+      .validarSenhaAdmin(this.auth.userLogado.schema, this.auth.userLogado.cod_usuario, this.senhaAdminLogin)
+      .subscribe({
+        next: (res) => {
+          this.autenticandoAdmin = false;
+          if (res.sucesso && res.admin) {
+            this.senhaAdminLogin = "";
+            this.autonomiaService.setAdminAutenticado(res.admin);
+            this.adminAutenticado = true;
+            this.carregarAdmins();
+          } else {
+            this.alert.presentToast(res.mensagem || "Acesso negado", 2500);
+          }
+        },
+        error: (err) => {
+          this.autenticandoAdmin = false;
+          this.alert.presentToast("Erro ao validar senha: " + (err.error?.message || err.message), 3000);
+        },
+      });
+  }
+
+  carregarAdmins() {
+    this.autonomiaService.listarAdminsAutonomia(this.auth.userLogado.schema).subscribe({
+      next: (res) => (this.listaAdmins = res.message || []),
+      error: (err) => this.alert.presentToast("Erro ao listar administradores: " + err.message, 3000),
+    });
+  }
+
+  buscarUsuarioParaAdmin() {
+    const busca = this.buscaAdminTexto.trim();
+    if (busca.length < 3) {
+      this.resultadosBuscaAdmin = [];
+      return;
+    }
+
+    this.autonomiaService.buscarUsuarioParaAdmin(this.auth.userLogado.schema, busca).subscribe({
+      next: (res) => (this.resultadosBuscaAdmin = res.message || []),
+      error: () => (this.resultadosBuscaAdmin = []),
+    });
+  }
+
+  adicionarComoAdmin(usuario: UsuarioBuscaSimples) {
+    const admin = this.autonomiaService.getAdminAutenticado();
+    if (!admin) return;
+
+    this.autonomiaService.adicionarAdminAutonomia(this.auth.userLogado.schema, usuario, admin).subscribe({
+      next: (res) => {
+        this.alert.presentToast(res.message, 2500);
+        this.buscaAdminTexto = "";
+        this.resultadosBuscaAdmin = [];
+        this.carregarAdmins();
+      },
+      error: (err) => this.alert.presentToast("Erro: " + (err.error?.message || err.message), 3000),
+    });
+  }
+
+  async removerAdmin(adminItem: AdminPerfil) {
+    const confirmado = await this.alert.presentAlertConfirm(
+      "Remover administrador",
+      `${adminItem.nom_usuario} vai perder acesso à tela de configuração de autonomia.`,
+      "Deseja continuar?",
+    );
+
+    if (confirmado !== "sim") return;
+
+    const admin = this.autonomiaService.getAdminAutenticado();
+    if (!admin) return;
+
+    this.autonomiaService.removerAdminAutonomia(this.auth.userLogado.schema, adminItem.cod_usuario, admin).subscribe({
+      next: (res) => {
+        this.alert.presentToast(res.message, 2500);
+        this.carregarAdmins();
+      },
+      error: (err) => this.alert.presentToast("Erro: " + (err.error?.message || err.message), 3000),
+    });
   }
 
   //   atualizaRegistro() {
@@ -557,29 +538,6 @@ export class HomePage implements OnInit {
   sincronizaCadastros() {
     // Método mantido para compatibilidade, mas redireciona para o novo fluxo
     this.atualizaRegistro();
-  }
-
-  alteraUsuario(ev, item) {
-    item.ind_aprova_negociacao = ev.detail.checked;
-
-    const status = ev.detail.checked;
-
-    this.movimento
-      .updateUsuario(item.cod_usuario, this.auth.userLogado.schema, status)
-      .pipe(
-        tap((data) => {
-          this.alert.presentToast(data.message, 3000);
-          this.novoUsuario = new newUser();
-        }),
-        timeout(51000),
-        catchError((err) => {
-          this.handleError(err);
-          throw err;
-        }),
-      )
-      .subscribe(() => {
-        this.buscaUsuarios();
-      });
   }
 
   cancel() {
