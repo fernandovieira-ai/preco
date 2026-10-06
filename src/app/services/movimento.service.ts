@@ -498,9 +498,9 @@ export class MovimentoService {
     );
   }
 
-  aprovaRegra(schema, cod_empresa, nom_usuario, seq_lote): Observable<any> {
+  aprovaRegra(schema, cod_empresa, nom_usuario, seq_lote, cod_usuario?: number): Observable<any> {
     const token = window.localStorage.getItem("token");
-    const body = { schema, cod_empresa, nom_usuario, seq_lote };
+    const body = { schema, cod_empresa, nom_usuario, seq_lote, cod_usuario };
 
     const httpOptions = {
       headers: new HttpHeaders({

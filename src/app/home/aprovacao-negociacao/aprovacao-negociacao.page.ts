@@ -10,12 +10,15 @@ import {
   distinctUntilChanged,
   Subscription,
   Subject,
+  forkJoin,
+  of,
 } from "rxjs";
 import { Alert } from "src/app/class/alert";
 import { minhasNegociacoes } from "src/app/class/user";
 import { AuthService } from "src/app/services/auth.service";
 import { MovimentoService } from "src/app/services/movimento.service";
 import { WebsocketService } from "src/app/services/websocket.service";
+import { AutonomiaService, ValidacaoAutonomia } from "src/app/services/autonomia.service";
 
 @Component({
   selector: "app-aprovacao-negociacao",
@@ -42,6 +45,7 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
     public movimento: MovimentoService,
     private alert: Alert,
     public router: Router,
+    private autonomiaService: AutonomiaService,
   ) {}
 
   ngOnInit() {
@@ -181,11 +185,106 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
       return;
     }
 
+    this.showLoading("Verificando autonomia...", 15000);
+
+    // Valida autonomia para cada empresa do lote (a margem pode variar por posto)
+    const validacoes$ = lote.empresas.map((empresa) =>
+      this.autonomiaService
+        .validarAutonomiaAprovacao(
+          this.auth.userLogado.schema,
+          this.auth.userLogado.cod_usuario,
+          empresa.cod_empresa,
+          lote.seq_lote_alteracao,
+        )
+        .pipe(
+          catchError(() =>
+            // Fail-safe: se a validação falhar por erro de rede/servidor,
+            // não bloqueia o fluxo — mantém o comportamento legado.
+            of<ValidacaoAutonomia>({
+              pode_aprovar: true,
+              perfil: "erro_validacao",
+              margem_autonomia: null,
+              margem_negociacao: null,
+              motivo: null,
+              sistema_autonomia_ativo: false,
+            }),
+          ),
+        ),
+    );
+
+    forkJoin(validacoes$).subscribe((validacoes: ValidacaoAutonomia[]) => {
+      this.loadingCtrl.dismiss().catch(() => {});
+
+      const bloqueio = validacoes.find((v) => v.sistema_autonomia_ativo && !v.pode_aprovar);
+
+      if (bloqueio && !bloqueio.qtd_liberados) {
+        // Nenhum item pode ser aprovado agora — só faz sentido pedir
+        // aprovação superior, não há o que aprovar direto.
+        this.oferecerSolicitarAprovacao(lote, bloqueio);
+      } else if (bloqueio) {
+        // Alguns itens do lote estão dentro da autonomia e outros não —
+        // aprova o que pode ser aprovado, avisando que o restante fica
+        // pendente (aprovaRegra faz essa separação item a item).
+        this.confirmarEAprovarLote(lote, bloqueio);
+      } else {
+        this.confirmarEAprovarLote(lote);
+      }
+    });
+  }
+
+  private async oferecerSolicitarAprovacao(lote, validacao: ValidacaoAutonomia) {
+    const margem = validacao.margem_negociacao !== null ? `R$ ${Number(validacao.margem_negociacao).toFixed(2)}` : "desconhecida";
+    const autonomia = validacao.margem_autonomia !== null ? `R$ ${Number(validacao.margem_autonomia).toFixed(2)}` : "—";
+
+    const confirmado = await this.alert.presentAlertConfirmCuston(
+      "Fora da sua autonomia",
+      `Margem deste lote: ${margem} | Sua autonomia: ${autonomia}`,
+      validacao.motivo || "Esta negociação precisa de aprovação de um supervisor/diretor.",
+      "Cancelar",
+      "Solicitar Aprovação",
+      "warning",
+    );
+
+    if (!confirmado) return;
+
+    this.showLoading("Enviando solicitação...", 15000);
+
+    this.autonomiaService
+      .solicitarAprovacaoSuperior(
+        this.auth.userLogado.schema,
+        lote.empresas[0].cod_empresa,
+        lote.seq_lote_alteracao,
+        this.auth.userLogado.cod_usuario,
+        this.auth.userLogado.nom_usuario,
+        `Margem ${Number(validacao.margem_negociacao).toFixed(2)} abaixo da autonomia (${Number(validacao.margem_autonomia).toFixed(2)})`,
+      )
+      .pipe(
+        timeout(15000),
+        finalize(() => this.loadingCtrl.dismiss().catch(() => {})),
+      )
+      .subscribe({
+        next: () => {
+          this.feedbackMensagem = "Solicitação enviada para aprovação superior.";
+          this.feedbackTipo = "sucesso";
+          this.mostrarFeedback = true;
+          setTimeout(() => (this.mostrarFeedback = false), 5000);
+        },
+        error: (err) => {
+          this.alert.presentToast("Erro ao solicitar aprovação: " + (err.error?.message || err.message), 3000);
+        },
+      });
+  }
+
+  private confirmarEAprovarLote(lote, bloqueio?: ValidacaoAutonomia) {
     const qtdEmpresas = lote.empresas.length;
     const empresasNomes = lote.empresas.map(e => e.nom_fantasia).join(', ');
-    const mensagem = qtdEmpresas > 1
+    let mensagem = qtdEmpresas > 1
       ? `Este lote contém ${qtdEmpresas} postos: ${empresasNomes}`
       : `Posto: ${empresasNomes}`;
+
+    if (bloqueio && bloqueio.qtd_bloqueados) {
+      mensagem += `\n\n⚠️ ${bloqueio.qtd_liberados} de ${bloqueio.qtd_total} item(ns) estão dentro da sua autonomia e serão aprovados. ${bloqueio.qtd_bloqueados} item(ns) ficarão pendentes de aprovação superior.`;
+    }
 
     this.alert
       .presentAlertConfirm(
@@ -200,6 +299,7 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
           // Aprovar para cada empresa do lote
           let aprovados = 0;
           let erros = 0;
+          let houveParcial = false;
 
           lote.empresas.forEach((empresa, index) => {
             this.movimento
@@ -208,18 +308,36 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
                 empresa.cod_empresa,
                 this.auth.userLogado.nom_usuario,
                 lote.seq_lote_alteracao,
+                this.auth.userLogado.cod_usuario,
               )
               .pipe(
                 tap((data) => {
                   aprovados++;
+                  if (data?.parcial) {
+                    houveParcial = true;
+                  }
 
                   // Se for a última aprovação
                   if (aprovados + erros === qtdEmpresas) {
                     this.loadingCtrl.dismiss().catch(() => {});
 
-                    if (erros === 0) {
+                    if (erros === 0 && !houveParcial) {
                       this.feedbackMensagem = `${qtdEmpresas} negociação(ões) aprovada(s) com sucesso!`;
                       this.feedbackTipo = 'sucesso';
+
+                      // Remove o lote da tela imediatamente (não espera o
+                      // round-trip do socket) — evita que o card fique
+                      // visível com o botão "Aprovar" clicável de novo.
+                      this.lotesAgrupados = this.lotesAgrupados.filter(
+                        (l) => l.seq_lote_alteracao !== lote.seq_lote_alteracao,
+                      );
+                    } else if (erros === 0 && houveParcial) {
+                      // Alguns itens do lote ficaram fora da autonomia —
+                      // o card continua na tela (agora só com os itens
+                      // pendentes) para não esconder o que falta aprovar.
+                      this.feedbackMensagem = `${data?.message || "Alguns itens ficaram pendentes de aprovação superior."}`;
+                      this.feedbackTipo = 'sucesso';
+                      this.buscaNegociacoesEmpresa();
                     } else {
                       this.feedbackMensagem = `${aprovados} aprovada(s), ${erros} com erro`;
                       this.feedbackTipo = 'erro';
@@ -297,6 +415,13 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
                 this.feedbackMensagem = `${qtdEmpresas} negociação(ões) reprovada(s) com sucesso!`;
                 this.feedbackTipo = 'sucesso';
                 this.mostrarFeedback = true;
+
+                // Remove o lote da tela imediatamente, sem esperar o
+                // re-fetch — evita o card ficar visível com os botões
+                // clicáveis de novo.
+                this.lotesAgrupados = this.lotesAgrupados.filter(
+                  (l) => l.seq_lote_alteracao !== lote.seq_lote_alteracao,
+                );
 
                 // Esconder feedback após 5 segundos
                 setTimeout(() => {

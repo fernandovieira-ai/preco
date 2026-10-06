@@ -68,5 +68,10 @@ ajuste/server-macos
 # Build outputs do backend
 backend/node_modules/
 
+# Base local de testes (cópia de produção — nunca subir dados reais)
+backend/local-db/dumps/
+backend/local-db/.env
+backend/.env.local
+
 # Ambiente local para teste no celular (gerado automaticamente)
 src/environments/environment.local.ts

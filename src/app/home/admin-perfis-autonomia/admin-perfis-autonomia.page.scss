@@ -1,0 +1,435 @@
+// Segue o mesmo padrão visual do resto do app (fundo gradiente roxo,
+// "cards" brancos com inputs de alto contraste) — ver negociacao-combustivel.page.scss
+
+ion-content {
+  --background: linear-gradient(135deg, #24024b 0%, #6c5ce7 100%);
+}
+
+// Centraliza o conteúdo em telas largas (desktop/tablet), igual ao
+// .content-wrapper.desktop-mode do home.page.scss
+.content-wrapper {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 4px 0 24px 0;
+
+  @media (min-width: 768px) {
+    padding-top: 12px;
+  }
+}
+
+// ========== FORMULÁRIO DE LOGIN (senha de admin) ==========
+
+.login-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 24px 16px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  background: white;
+  border-radius: 16px;
+  padding: 28px 22px;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+
+  > ion-icon {
+    font-size: 2.8em;
+    color: #6c5ce7;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    margin: 0 0 8px 0;
+    font-size: 17px;
+    font-weight: 700;
+    color: #24024b;
+  }
+
+  > p {
+    margin: 0 0 20px 0;
+    font-size: 12.5px;
+    color: #6b7280;
+    line-height: 1.4;
+  }
+}
+
+.senha-field {
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0 10px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s ease;
+
+  &:focus-within {
+    border-color: #6c5ce7;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 11px 4px;
+    font-size: 14px;
+    color: #1f2937;
+
+    &::placeholder {
+      color: #9ca3af;
+    }
+  }
+
+  ion-icon {
+    font-size: 18px;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+}
+
+.login-buttons {
+  display: flex;
+  gap: 8px;
+
+  ion-button {
+    flex: 1;
+    margin: 0;
+    height: 40px;
+    font-size: 13px;
+    --border-radius: 10px;
+  }
+}
+
+// ========== RESULTADO DA BUSCA POR USUÁRIO ==========
+
+.busca-usuario-card {
+  margin: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-left: 5px solid #6c5ce7;
+
+  .busca-usuario-titulo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #6c5ce7;
+    margin-bottom: 8px;
+
+    ion-icon {
+      font-size: 15px;
+    }
+  }
+
+  .usuario-item {
+    padding: 6px 0;
+
+    & + .usuario-item {
+      border-top: 1px solid #f0f0f0;
+    }
+  }
+
+  .usuario-nome {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #24024b;
+    margin-bottom: 6px;
+  }
+
+  .usuario-grupos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    ion-badge {
+      cursor: pointer;
+      font-size: 10.5px;
+      padding: 4px 8px;
+
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+}
+
+// ========== INTERRUPTOR GERAL ==========
+
+.switch-card {
+  margin: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-left: 5px solid var(--ion-color-medium);
+
+  &.on {
+    border-left-color: var(--ion-color-success);
+  }
+
+  &.off {
+    border-left-color: var(--ion-color-danger);
+  }
+
+  .switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .switch-info {
+    min-width: 0;
+
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 4px 0;
+      color: #24024b;
+
+      ion-icon {
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+    }
+
+    p {
+      margin: 0 0 4px 0;
+      font-size: 12px;
+      color: #4b5563;
+      line-height: 1.3;
+    }
+
+    small {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+  }
+
+  ion-toggle {
+    flex-shrink: 0;
+  }
+}
+
+// ========== CARDS DE PERFIL ==========
+
+.perfil-card {
+  margin: 10px;
+  background: white;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+
+    ion-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .nome {
+      font-size: 15px;
+      font-weight: 700;
+      color: #24024b;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .subinfo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 11px;
+    color: #6b7280;
+
+    ion-badge {
+      font-size: 10px;
+      padding: 3px 6px;
+    }
+
+    .badge-clicavel {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+
+      ion-icon {
+        font-size: 11px;
+      }
+
+      &:active {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  .empresas-permitidas {
+    font-size: 11px;
+    color: #6b7280;
+    margin: 0 0 10px 0;
+  }
+
+  ion-item {
+    --padding-start: 0;
+    --inner-padding-end: 0;
+    --background: transparent;
+    --min-height: auto;
+    margin-bottom: 6px;
+
+    ion-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #24024b;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+      margin-bottom: 4px !important;
+    }
+
+    ion-note {
+      font-size: 10px;
+      color: #9ca3af;
+    }
+
+    ion-select,
+    ion-input {
+      --background: #f8f9fa;
+      background: #f8f9fa;
+      border-radius: 10px;
+      border: 1.5px solid #e5e7eb;
+      --padding-start: 10px;
+      --padding-end: 10px;
+      --padding-top: 8px;
+      --padding-bottom: 8px;
+      font-size: 13px;
+      color: #1f2937;
+      margin-top: 2px;
+    }
+  }
+
+  .button-group {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    ion-button {
+      margin: 0;
+      height: 36px;
+      font-size: 12px;
+      --border-radius: 10px;
+    }
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 16px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+
+  ion-icon {
+    font-size: 2.5em;
+    margin-bottom: 8px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+  }
+}
+
+// ========== HEADER / FILTROS (compactação geral) ==========
+
+ion-header {
+  ion-toolbar {
+    --min-height: 44px;
+
+    &:not([color="danger"]) {
+      --background: #24024b;
+      --color: white;
+    }
+  }
+
+  ion-searchbar {
+    --background: rgba(255, 255, 255, 0.15);
+    --color: white;
+    --placeholder-color: rgba(255, 255, 255, 0.7);
+    --icon-color: white;
+    --clear-button-color: white;
+    --box-shadow: none;
+    padding: 4px 8px;
+
+    // Centraliza igual ao .content-wrapper, para alinhar com os cards abaixo
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  ion-segment {
+    --background: rgba(255, 255, 255, 0.1);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  ion-segment-button {
+    min-width: 76px;
+    font-size: 11px;
+    --padding-top: 6px;
+    --padding-bottom: 6px;
+    --color: rgba(255, 255, 255, 0.75);
+    --color-checked: white;
+    --indicator-color: #6c5ce7;
+  }
+}
+
+// ========== POPOVER DO ion-select (renderiza fora da árvore do componente) ==========
+
+::ng-deep ion-select-popover {
+  ion-list {
+    background: white;
+    padding: 4px 0;
+  }
+
+  ion-item {
+    --background: white;
+    --color: #1f2937;
+    font-size: 14px;
+  }
+
+  ion-radio {
+    --color: #9ca3af;
+    --color-checked: #6c5ce7;
+  }
+}
+
+// O estilo de ion-alert.custom-alert (usado nos prompts de justificativa,
+// histórico etc.) mora em src/global.scss — não aqui. Isso é proposital:
+// "custom-alert" é usado pela classe Alert compartilhada em telas fora
+// deste módulo lazy-loaded (aprovação, login, histórico...), então o
+// estilo precisa estar num CSS que carrega sempre, não só quando esta
+// tela é visitada.

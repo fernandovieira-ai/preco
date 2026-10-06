@@ -9,6 +9,12 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
+// Em desenvolvimento, .env.local (se existir) sobrepõe a conexão para
+// apontar para o banco local de testes (Docker). Nunca afeta produção.
+if (process.env.NODE_ENV !== "production") {
+  dotenv.config({ path: ".env.local", override: true });
+}
+
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 //=> conexão com a base de dados trocaprecos

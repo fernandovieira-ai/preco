@@ -238,6 +238,24 @@
         </div>
         <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
       </div>
+
+      <!-- Autonomia de Descontos (Admin) -->
+      <div
+        class="feature-card"
+        *ngIf="auth.userLogado.cod_usuario === 466"
+        routerLink="/home/admin-perfis-autonomia"
+      >
+        <div class="feature-icon-container danger">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+        </div>
+        <div class="feature-content">
+          <h3 class="feature-title">Autonomia de Descontos</h3>
+          <p class="feature-description">
+            Configure margens de aprovação por gerente/supervisor
+          </p>
+        </div>
+        <ion-icon name="chevron-forward" class="feature-arrow"></ion-icon>
+      </div>
     </div>
   </div>
 

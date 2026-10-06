@@ -256,7 +256,7 @@ export class Alert {
       database: "🗄️",
     };
 
-    return `${icons[iconName] || icons["sync"]}`;
+    return `${icons[iconName] || icons["sync"]} `;
   }
 
   async presentAlertPromptSenha(): Promise<any> {

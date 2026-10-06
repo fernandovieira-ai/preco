@@ -421,15 +421,52 @@ ion-icon.alert-icon {
   color: #3498db;
 }
 
+// Alerta padrão (cssClass "custom-alert" em src/app/class/alert.ts) — usado
+// em telas por todo o app (aprovação, exclusão, login, histórico, admin de
+// autonomia etc.). PRECISA estar aqui em global.scss (não num SCSS de
+// componente lazy-loaded): sem isso, herda o tema escuro global do app
+// (--ion-background-color roxo escuro + --ion-text-color quase preto) e
+// fica ilegível — e só carregaria se o usuário passasse por uma tela
+// específica antes, o que é frágil.
+::ng-deep ion-alert.custom-alert {
+  .alert-wrapper {
+    background: white;
+  }
+
+  .alert-head {
+    .alert-title {
+      color: #24024b;
+    }
+
+    .alert-sub-title {
+      color: #4b5563;
+    }
+  }
+
+  .alert-message {
+    color: #374151;
+  }
+
+  .alert-input-group {
+    textarea.alert-input,
+    input.alert-input {
+      background: #f8f9fa !important;
+      color: #1f2937 !important;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+  }
+}
+
 // Alerta profissional
 .custom-alert-professional {
   --backdrop-opacity: 0.8;
-  //  --background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  --background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   --border-radius: 16px;
   --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 
   .alert-wrapper {
-    //border: 1px solid rgba(0, 0, 0, 0.05);
     max-width: 90%;
     width: 350px;
   }
@@ -441,13 +478,13 @@ ion-icon.alert-icon {
     .alert-title {
       font-size: 20px;
       font-weight: 600;
-      color: #8dc0f3;
+      color: #24024b;
       margin-bottom: 5px;
     }
 
     .alert-sub-title {
       font-size: 14px;
-      color: #7f8c8d;
+      color: #4b5563;
       font-weight: 400;
       line-height: 1.4;
     }
@@ -456,7 +493,7 @@ ion-icon.alert-icon {
   .alert-message {
     text-align: center;
     font-size: 14px;
-    //color: #5a6c7d;
+    color: #374151;
     line-height: 1.5;
     padding: 0 20px 20px;
     max-height: 200px;
@@ -525,16 +562,15 @@ ion-icon.alert-icon {
   }
 }
 
-// Versão com ícone
+// Versão com ícone — o ícone já vem embutido no texto do header (via
+// getIconHtml em alert.ts), então aqui só ajusta o espaçamento; um
+// ::before fixo aqui duplicaria/trocaria o ícone certo por um genérico.
 .custom-alert-professional.with-icon {
   .alert-head {
-    padding-top: 30px;
+    padding-top: 24px;
 
-    &::before {
-      content: "🔄";
-      font-size: 40px;
-      display: block;
-      margin-bottom: 15px;
+    .alert-title {
+      font-size: 24px;
     }
   }
 }

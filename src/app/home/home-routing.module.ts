@@ -68,6 +68,13 @@ const routes: Routes = [
         (m) => m.PrecoIntervaloPageModule,
       ),
   },
+  {
+    path: "admin-perfis-autonomia",
+    loadChildren: () =>
+      import("./admin-perfis-autonomia/admin-perfis-autonomia.module").then(
+        (m) => m.AdminPerfisAutonomiaPageModule,
+      ),
+  },
 ];
 
 @NgModule({

@@ -1,0 +1,180 @@
+<ion-header [translucent]="true" mode="ios">
+  <ion-toolbar color="danger">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/home"></ion-back-button>
+    </ion-buttons>
+    <ion-title style="font-size: 15px;">Autonomia de Descontos</ion-title>
+    <ion-buttons slot="end" *ngIf="autenticado">
+      <ion-button (click)="bloquear()">
+        <ion-icon name="lock-closed" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <ion-toolbar *ngIf="autenticado">
+    <ion-searchbar
+      [(ngModel)]="buscaTexto"
+      (ionInput)="filtrarGrupos()"
+      placeholder="Buscar por grupo ou nome de usuário"
+      debounce="300"
+    ></ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="login-container" *ngIf="!autenticado">
+    <div class="login-card">
+      <ion-icon name="shield-checkmark-outline"></ion-icon>
+      <h2>Área Restrita</h2>
+      <p>Digite sua senha de login para confirmar que você tem permissão de administrador</p>
+
+      <div class="senha-field">
+        <input
+          [type]="mostrarSenha ? 'text' : 'password'"
+          [(ngModel)]="senhaLogin"
+          placeholder="Sua senha de login"
+          (keyup.enter)="confirmarLogin()"
+          [disabled]="autenticando"
+          autocomplete="current-password"
+        />
+        <ion-icon
+          [name]="mostrarSenha ? 'eye-off-outline' : 'eye-outline'"
+          (click)="toggleMostrarSenha()"
+        ></ion-icon>
+      </div>
+
+      <div class="login-buttons">
+        <ion-button fill="outline" color="medium" (click)="cancelarLogin()" [disabled]="autenticando">
+          Cancelar
+        </ion-button>
+        <ion-button (click)="confirmarLogin()" [disabled]="autenticando">
+          {{ autenticando ? 'Validando...' : 'Entrar' }}
+        </ion-button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="autenticado" class="content-wrapper">
+    <!-- Resultado da busca por usuário -->
+    <div class="busca-usuario-card" *ngIf="resultadosUsuario.length > 0">
+      <div class="busca-usuario-titulo">
+        <ion-icon name="person-outline"></ion-icon>
+        Usuário(s) encontrado(s)
+      </div>
+
+      <div class="usuario-item" *ngFor="let u of resultadosUsuario">
+        <span class="usuario-nome">{{ u.nom_usuario }}</span>
+        <div class="usuario-grupos">
+          <ion-badge
+            *ngFor="let g of u.grupos"
+            [color]="g.ind_perfil_aprovacao ? getCorPerfil(g) : 'medium'"
+            (click)="irParaGrupo(g.cod_grupo)"
+          >
+            {{ g.des_grupo }}
+            <ng-container *ngIf="g.ind_perfil_aprovacao"> · {{ getNomePerfil(g.ind_perfil_aprovacao) }}</ng-container>
+          </ion-badge>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interruptor geral -->
+    <div class="switch-card" [class.on]="sistemaAtivo" [class.off]="!sistemaAtivo">
+      <div class="switch-row">
+        <div class="switch-info">
+          <h2>
+            <ion-icon [name]="sistemaAtivo ? 'flash' : 'flash-off'"></ion-icon>
+            Sistema de Autonomia: {{ sistemaAtivo ? 'ATIVO' : 'INATIVO' }}
+          </h2>
+          <p *ngIf="sistemaAtivo">
+            Usuários dos grupos configurados abaixo só aprovam dentro da margem definida.
+          </p>
+          <p *ngIf="!sistemaAtivo">
+            Comportamento legado: todos com permissão aprovam qualquer margem.
+          </p>
+          <small *ngIf="sistemaInfo?.nom_usuario_alteracao">
+            Última alteração: {{ sistemaInfo.nom_usuario_alteracao }}
+            em {{ sistemaInfo.dta_alteracao | date:'dd/MM/yy HH:mm' }}
+          </small>
+        </div>
+        <ion-toggle
+          [checked]="sistemaAtivo"
+          (ionChange)="alternarSistemaGeral()"
+          color="success"
+        ></ion-toggle>
+      </div>
+    </div>
+
+    <!-- Lista de grupos -->
+    <div *ngFor="let grupo of gruposFiltrados; trackBy: trackByGrupo" class="perfil-card">
+      <div class="card-header">
+        <ion-icon name="people-circle" [color]="getCorPerfil(grupo)"></ion-icon>
+        <span class="nome">{{ grupo.des_grupo }}</span>
+      </div>
+
+      <div class="subinfo">
+        <span>Código: {{ grupo.cod_grupo }}</span>
+        <ion-badge [color]="getCorPerfil(grupo)">
+          {{ getNomePerfil(grupo.ind_perfil_aprovacao) }}
+        </ion-badge>
+        <ion-badge color="medium" class="badge-clicavel" (click)="verUsuariosGrupo(grupo)">
+          <ion-icon name="eye-outline"></ion-icon>
+          {{ grupo.qtd_usuarios }} usuário(s)
+        </ion-badge>
+      </div>
+
+      <ion-button
+        *ngIf="!grupo.ind_perfil_aprovacao"
+        expand="block"
+        fill="outline"
+        size="small"
+        (click)="iniciarEdicao(grupo)"
+      >
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Configurar autonomia para este grupo
+      </ion-button>
+
+      <div *ngIf="grupo.ind_perfil_aprovacao">
+        <ion-item lines="none">
+          <ion-label position="stacked">Perfil</ion-label>
+          <ion-select
+            [(ngModel)]="grupo.ind_perfil_aprovacao"
+            interface="popover"
+            (ionChange)="onCampoAlterado(grupo)"
+          >
+            <ion-select-option *ngFor="let tipo of tiposPerfil" [value]="tipo.codigo">
+              {{ tipo.nome }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item lines="none">
+          <ion-label position="stacked">Margem mínima de autonomia (R$)</ion-label>
+          <ion-input
+            type="number"
+            step="0.01"
+            [(ngModel)]="grupo.val_margem_minima_autonomia"
+            (ionInput)="onCampoAlterado(grupo)"
+          ></ion-input>
+          <ion-note>Abaixo desse valor, precisa de aprovação superior. Vale para todos os {{ grupo.qtd_usuarios }} usuários deste grupo.</ion-note>
+        </ion-item>
+
+        <div class="button-group">
+          <ion-button [disabled]="!grupo._alterado" (click)="salvarGrupo(grupo)">
+            <ion-icon name="save-outline" slot="start"></ion-icon>
+            Salvar Alterações
+          </ion-button>
+
+          <ion-button fill="outline" (click)="verHistorico(grupo)">
+            <ion-icon name="time-outline" slot="start"></ion-icon>
+            Ver Histórico
+          </ion-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="gruposFiltrados.length === 0">
+      <ion-icon name="search-outline"></ion-icon>
+      <p>Nenhum grupo encontrado com esse filtro</p>
+    </div>
+  </div>
+</ion-content>
