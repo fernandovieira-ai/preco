@@ -492,12 +492,14 @@ ion-icon.alert-icon {
 
   .alert-message {
     text-align: center;
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
     color: #374151;
-    line-height: 1.5;
+    line-height: 1.6;
     padding: 0 20px 20px;
     max-height: 200px;
     overflow-y: auto;
+    white-space: pre-line;
 
     &::-webkit-scrollbar {
       width: 4px;

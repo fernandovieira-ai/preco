@@ -7,6 +7,7 @@ import { Alert } from "src/app/class/alert";
 import { AuthService } from "src/app/services/auth.service";
 import { MovimentoService } from "src/app/services/movimento.service";
 import { DataloadService } from "src/app/services/dataload.service";
+import { AutonomiaService } from "src/app/services/autonomia.service";
 import { formaPagto, pessoaNegociacao } from "src/app/class/user";
 import * as moment from "moment";
 import { timeout } from "rxjs";
@@ -100,6 +101,7 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
     private router: Router,
     private loadingCtrl: LoadingController,
     private alert: Alert,
+    private autonomiaService: AutonomiaService,
   ) {
     // Pré-popular cache de nomes
     this.tiposPreco.forEach((t) =>
@@ -1027,7 +1029,99 @@ export class NegociacaoCombustivelPage implements OnInit, OnDestroy {
       return;
     }
 
-    // 7. Enviar negociação
+    // 7. Checar autonomia (mesma regra usada na tela de Aprovação de
+    // Negociações) ANTES de enviar — se o parâmetro geral estiver ativo,
+    // avisa o usuário quais itens já serão aprovados automaticamente
+    // (dentro da margem do grupo dele) e quais ficarão pendentes, e só
+    // envia depois de confirmação.
+    const itensParaValidarAutonomia = regrasValidas.map((r) => ({
+      cod_item: r.cod_item,
+      des_item: r.des_item,
+      cod_empresa: r.cod_empresa,
+      margem_valor: r.margem_valor,
+    }));
+
+    this.autonomiaService
+      .validarAutonomiaNegociacao(
+        this.auth.userLogado.schema,
+        this.auth.userLogado.cod_usuario,
+        itensParaValidarAutonomia,
+      )
+      .subscribe({
+        next: async (validacao) => {
+          if (!validacao.sistema_autonomia_ativo) {
+            this.executarEnvioNegociacao(regrasValidas);
+            return;
+          }
+
+          const confirmado =
+            await this.confirmarAutonomiaAntesDeEnviar(validacao);
+          if (confirmado) {
+            this.executarEnvioNegociacao(regrasValidas);
+          }
+        },
+        error: () => {
+          // Fail-safe: se a checagem falhar (rede/servidor), não bloqueia
+          // o envio — mantém o comportamento de antes desta funcionalidade
+          // existir (tudo pendente, aprovação feita depois na outra tela).
+          this.executarEnvioNegociacao(regrasValidas);
+        },
+      });
+  }
+
+  private async confirmarAutonomiaAntesDeEnviar(validacao: {
+    qtd_total: number;
+    qtd_liberados: number;
+    qtd_bloqueados: number;
+    margem_autonomia: number | null;
+  }): Promise<boolean> {
+    const autonomia =
+      validacao.margem_autonomia !== null
+        ? `R$ ${Number(validacao.margem_autonomia).toFixed(2)}`
+        : "—";
+
+    const todoLiberado = validacao.qtd_bloqueados === 0;
+    const todoBloqueado = validacao.qtd_liberados === 0;
+
+    // Mensagem curta e visual (✅ verde / ❌ vermelho) — quem opera no posto
+    // raramente lê um texto longo, então o resumo precisa caber num relance.
+    let header: string;
+    let resumo: string;
+    let pergunta: string;
+    let icon: string;
+
+    // header não leva emoji manual: presentAlertConfirmCuston já prefixa um
+    // ícone (getIconHtml) de acordo com o parâmetro "icon" abaixo.
+    if (todoLiberado) {
+      header = "Dentro da Autonomia";
+      resumo = `✅ ${validacao.qtd_total} item(ns) aprovado(s) automaticamente`;
+      pergunta = "Enviar negociação?";
+      icon = "success";
+    } else if (todoBloqueado) {
+      header = "Fora da Autonomia";
+      resumo = `❌ ${validacao.qtd_total} item(ns) pendente(s) de aprovação superior`;
+      pergunta = "Enviar mesmo assim?";
+      icon = "error";
+    } else {
+      header = "Autonomia Parcial";
+      resumo = `✅ ${validacao.qtd_liberados} aprovado(s)  •  ❌ ${validacao.qtd_bloqueados} pendente(s)`;
+      pergunta = "Enviar negociação?";
+      icon = "warning";
+    }
+
+    const mensagem = `${resumo}\n${pergunta}`;
+
+    return this.alert.presentAlertConfirmCuston(
+      header,
+      `Sua autonomia: ${autonomia}`,
+      mensagem,
+      "Cancelar",
+      "Enviar",
+      icon,
+    );
+  }
+
+  private async executarEnvioNegociacao(regrasValidas: pessoaNegociacao[]) {
     const loading = await this.loadingCtrl.create({
       message: "Enviando negociação...",
       duration: 50000,

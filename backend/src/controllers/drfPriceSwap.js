@@ -1393,6 +1393,66 @@ exports.novaNegociacao = async (req, res) => {
   }
 };
 
+/**
+ * Mesma checagem de autonomia usada na tela de Aprovação de Negociações
+ * (sistemaAutonomiaAtivo + avaliarItensLote / fn_validar_autonomia_aprovacao),
+ * só que aplicada já na criação do lote: itens cujo usuário tem autonomia
+ * suficiente (pela margem configurada para o GRUPO dele no EMSys3) nascem
+ * direto aprovados (ind_status='T'), sem precisar de um passo manual
+ * depois na tela de Aprovação. Os itens fora da autonomia continuam
+ * pendentes ('X'), exatamente como hoje.
+ *
+ * Como fica dentro de novaNegociacaoInsert (usado por TODAS as telas que
+ * criam negociação: combustível, produtos na pista, atualização de preço,
+ * preços), vale igual para qualquer usuário/tela, não só um caso específico.
+ */
+async function autoAprovarItensAutonomia(
+  schema,
+  cod_usuario,
+  nom_usuario,
+  seq_lote_alteracao,
+  itens,
+) {
+  if (!cod_usuario || !(await sistemaAutonomiaAtivo(schema))) {
+    return "Concluído e Pendente de Aprovação";
+  }
+
+  const empresas = [...new Set(itens.map((item) => item.cod_empresa))];
+
+  let liberados = 0;
+  let bloqueados = 0;
+
+  for (const cod_empresa_item of empresas) {
+    const avaliacao = await avaliarItensLote(
+      schema,
+      cod_usuario,
+      cod_empresa_item,
+      seq_lote_alteracao,
+    );
+    bloqueados += avaliacao.bloqueados.length;
+
+    const idsLiberados = avaliacao.liberados.map((i) => i.seq_registro);
+    if (idsLiberados.length > 0) {
+      await db.query_trocaprecos(
+        `update ${schema}.tab_nova_regra
+            set ind_status = 'T',
+                usuario_aprovacao = $2
+          where seq_registro = ANY($1)`,
+        [idsLiberados, nom_usuario],
+      );
+      liberados += idsLiberados.length;
+    }
+  }
+
+  if (liberados === 0) {
+    return "Concluído e Pendente de Aprovação";
+  }
+  if (bloqueados === 0) {
+    return "Aprovado Automaticamente";
+  }
+  return `Aprovado parcialmente (${bloqueados} item(ns) pendente(s) de aprovação superior)`;
+}
+
 async function novaNegociacaoInsert(
   schema,
   cod_empresa,
@@ -1462,11 +1522,19 @@ async function novaNegociacaoInsert(
         }
 
         if (progresso === total) {
+          const mensagemFinal = await autoAprovarItensAutonomia(
+            schema,
+            cod_usuario,
+            nom_usuario,
+            seq_lote_alteracao,
+            itens,
+          );
+
           await geraStatus(
             seq_lote_alteracao,
             total,
             progresso,
-            "Concluído e Pendente de Aprovação",
+            mensagemFinal,
             empresa,
             schema,
           );
@@ -1504,7 +1572,7 @@ async function geraStatus(lote, total, progresso, error, empresa, schema) {
       await db.query_trocaprecos(
         `insert into ${schema}.tab_Progresso_lote ( seq_lote, total, progresso, error )
                                                         values ( $1, $2, $3, $4)`,
-        [lote, total, progresso, "Concluído e Pendente de Aprovação"],
+        [lote, total, progresso, error],
       );
     }
 
@@ -1641,7 +1709,7 @@ exports.buscaMinhasNegociacoesDetalhe = async (req, res) => {
                                     ELSE c.des_forma_pagto
                                     END AS des_forma_pagto,
                                     a.cod_item, d.des_item, a.cod_pessoa, b.nom_pessoa, a.dta_inclusao, a.ind_excluido,
-                                    a.ind_percentual_valor, ind_tipo_negociacao, ind_tipo_preco_base, val_preco_venda_a, val_preco_venda_b, val_preco_venda_c, val_preco_venda_d, val_preco_venda_e, a.ind_status,
+                                    a.ind_percentual_valor, a.ind_tipo_negociacao, a.ind_tipo_preco_base, a.val_preco_venda_a, a.val_preco_venda_b, a.val_preco_venda_c, a.val_preco_venda_d, a.val_preco_venda_e, a.ind_status,
                                     e.val_custo_medio,
                                     e.val_preco_venda
                                     from ${schema}.tab_nova_regra a
@@ -2130,6 +2198,120 @@ exports.validarAutonomiaAprovacao = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Falha ao validar autonomia: " + error,
+    });
+  }
+};
+
+//=> Mesma análise de autonomia, mas ANTES de o lote existir no banco — usada
+// nas telas de negociação (combustível, produtos na pista, atualização de
+// preço, preços) para avisar o usuário, antes de enviar, quais itens já
+// serão aprovados automaticamente (dentro da margem do GRUPO dele) e quais
+// ficarão pendentes. Recebe a margem já calculada no frontend (preço
+// negociado - custo médio), já que ainda não há seq_lote/tab_nova_regra
+// para consultar vw_negociacao_margem como em avaliarItensLote.
+exports.validarAutonomiaNegociacao = async (req, res) => {
+  const { schema, cod_usuario, itens } = req.body;
+
+  const qtdTotalRecebida = Array.isArray(itens) ? itens.length : 0;
+
+  const respostaLegado = {
+    sistema_autonomia_ativo: false,
+    qtd_total: qtdTotalRecebida,
+    qtd_liberados: qtdTotalRecebida,
+    qtd_bloqueados: 0,
+    margem_autonomia: null,
+    itens_bloqueados: [],
+  };
+
+  try {
+    if (
+      !cod_usuario ||
+      qtdTotalRecebida === 0 ||
+      !(await sistemaAutonomiaAtivo(schema))
+    ) {
+      return res.status(200).json(respostaLegado);
+    }
+
+    const bloqueados = [];
+    const validos = []; // itens com margem/empresa utilizáveis, na ordem em que serão enviados ao banco
+
+    itens.forEach((item) => {
+      const margemBruta = item.margem_valor;
+      const margem =
+        margemBruta !== null && margemBruta !== undefined && item.cod_empresa
+          ? Math.round(Number(margemBruta) * 100) / 100
+          : null;
+
+      if (margem === null || Number.isNaN(margem)) {
+        bloqueados.push({
+          cod_item: item.cod_item,
+          des_item: item.des_item,
+          cod_empresa: item.cod_empresa,
+          margem: null,
+          motivo: "Não foi possível calcular a margem deste item.",
+        });
+        return;
+      }
+
+      validos.push({ ...item, margem });
+    });
+
+    let liberadosCount = 0;
+    let margemAutonomiaUsuario = null;
+
+    if (validos.length > 0) {
+      // Uma única query para todos os itens (em vez de uma por item): usa
+      // UNNEST para transformar os arrays recebidos em linhas e faz o LEFT
+      // JOIN LATERAL com fn_validar_autonomia_aprovacao por linha — mesmo
+      // padrão já usado (e testado em produção) por avaliarItensLote, só
+      // que aqui a "tabela" de entrada vem dos arrays em vez de uma tabela
+      // real, já que o lote ainda não existe no banco.
+      const result = await db.query_trocaprecos(
+        `SELECT f.pode_aprovar, f.perfil, f.margem_autonomia, f.motivo
+           FROM UNNEST($1::int[], $2::numeric[]) WITH ORDINALITY AS e(cod_empresa, margem, ord)
+           LEFT JOIN LATERAL (
+             SELECT * FROM ${schema}.fn_validar_autonomia_aprovacao($3, ROUND(e.margem, 2), e.cod_empresa)
+           ) f ON TRUE
+          ORDER BY e.ord`,
+        [validos.map((v) => v.cod_empresa), validos.map((v) => v.margem), cod_usuario],
+      );
+
+      result.rows.forEach((row, i) => {
+        const item = validos[i];
+        const margemAutonomia =
+          row.margem_autonomia !== null ? Number(row.margem_autonomia) : null;
+
+        if (margemAutonomia !== null) {
+          margemAutonomiaUsuario = margemAutonomia;
+        }
+
+        if (row.perfil === "sem_perfil" || row.pode_aprovar) {
+          liberadosCount++;
+        } else {
+          bloqueados.push({
+            cod_item: item.cod_item,
+            des_item: item.des_item,
+            cod_empresa: item.cod_empresa,
+            margem: item.margem,
+            perfil: row.perfil,
+            margem_autonomia: margemAutonomia,
+            motivo: row.motivo,
+          });
+        }
+      });
+    }
+
+    res.status(200).json({
+      sistema_autonomia_ativo: true,
+      qtd_total: qtdTotalRecebida,
+      qtd_liberados: liberadosCount,
+      qtd_bloqueados: bloqueados.length,
+      margem_autonomia: margemAutonomiaUsuario,
+      itens_bloqueados: bloqueados,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Falha ao validar autonomia da negociação: " + error,
     });
   }
 };

@@ -29,6 +29,22 @@ export interface ValidacaoAutonomia {
   itens_bloqueados?: ItemAutonomiaBloqueado[];
 }
 
+export interface ItemNegociacaoAutonomia {
+  cod_item: number;
+  des_item?: string;
+  cod_empresa: number;
+  margem_valor: number;
+}
+
+export interface ValidacaoAutonomiaNegociacao {
+  sistema_autonomia_ativo: boolean;
+  qtd_total: number;
+  qtd_liberados: number;
+  qtd_bloqueados: number;
+  margem_autonomia: number | null;
+  itens_bloqueados: ItemAutonomiaBloqueado[];
+}
+
 export interface PerfilGrupoAutonomia {
   cod_grupo: number;
   des_grupo: string;
@@ -117,6 +133,26 @@ export class AutonomiaService {
     const body = { schema, cod_usuario, cod_empresa, seq_lote };
     return this.httpClient
       .post<ValidacaoAutonomia>(`${this.baseURL}/validarAutonomiaAprovacao`, body)
+      .pipe(
+        take(1),
+        catchError((err) => {
+          throw err;
+        }),
+      );
+  }
+
+  // Mesma análise de autonomia, mas ANTES de o lote existir no banco —
+  // usada nas telas de negociação para avisar o usuário, antes de enviar,
+  // quais itens já serão aprovados automaticamente e quais ficarão
+  // pendentes de aprovação superior.
+  validarAutonomiaNegociacao(
+    schema: string,
+    cod_usuario: number,
+    itens: ItemNegociacaoAutonomia[],
+  ): Observable<ValidacaoAutonomiaNegociacao> {
+    const body = { schema, cod_usuario, itens };
+    return this.httpClient
+      .post<ValidacaoAutonomiaNegociacao>(`${this.baseURL}/validarAutonomiaNegociacao`, body)
       .pipe(
         take(1),
         catchError((err) => {

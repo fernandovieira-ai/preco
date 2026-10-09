@@ -130,7 +130,7 @@ export class LoginPage implements OnInit, AfterViewInit {
   connectionStatus = true;
   showStats = false;
   currentDate = new Date();
-  currentVersion = "1.0.15";
+  currentVersion = "1.0.19";
   shakeButton = false;
   logoLoaded = true; // Para controlar exibição da logo vs texto
   lembrarSenha = false; // Controle do checkbox lembrar-me
