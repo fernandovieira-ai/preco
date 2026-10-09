@@ -509,6 +509,10 @@ ion-toolbar {
   gap: 12px;
 
   .footer-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
     ion-chip {
       margin: 0;
       height: 32px;
@@ -519,6 +523,16 @@ ion-toolbar {
 
       ion-icon {
         font-size: 1rem;
+      }
+    }
+
+    .author-chip {
+      max-width: 180px;
+
+      ion-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
     }
   }

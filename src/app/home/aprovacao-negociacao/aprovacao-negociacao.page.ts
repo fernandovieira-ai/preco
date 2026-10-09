@@ -154,6 +154,7 @@ export class AprovacaoNegociacaoPage implements OnInit, OnDestroy {
           total_registros: negociacao.total_registros,
           ind_excluido: negociacao.ind_excluido,
           error: negociacao.error,
+          nom_usuario: negociacao.nom_usuario,
           empresas: [],
         });
       }

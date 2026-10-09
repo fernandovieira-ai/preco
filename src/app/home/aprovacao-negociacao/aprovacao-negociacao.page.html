@@ -173,6 +173,15 @@
                   >{{lote.dta_inclusao | date: 'dd/MM/yyyy'}}</ion-label
                 >
               </ion-chip>
+              <ion-chip
+                *ngIf="lote.nom_usuario"
+                color="tertiary"
+                outline
+                class="author-chip"
+              >
+                <ion-icon name="person-outline"></ion-icon>
+                <ion-label>{{lote.nom_usuario}}</ion-label>
+              </ion-chip>
             </div>
             <div class="footer-actions">
               <ion-button

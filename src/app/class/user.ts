@@ -137,6 +137,7 @@ export class minhasNegociacoes {
   error: string;
   des_observacao: string;
   ind_status: string;
+  nom_usuario: string;
 }
 
 export class minhasNegociacoesDetalhe {
