@@ -303,11 +303,11 @@ export class AdminPerfisAutonomiaPage implements OnInit {
         const mensagem = usuarios.length === 0
           ? "Nenhum usuário ativo neste grupo."
           : usuarios
-              .map((u) => `${u.nom_usuario} <span style="opacity:.6">(${u.cod_usuario})</span>`)
-              .join("<br>");
+              .map((u) => `${u.nom_usuario} (${u.cod_usuario})`)
+              .join("\n");
 
         const alert = await this.alertCtrl.create({
-          cssClass: "custom-alert",
+          cssClass: "custom-alert custom-alert-lista",
           header: `Usuários — ${grupo.des_grupo}`,
           subHeader: `${usuarios.length} usuário(s) ativo(s) neste grupo`,
           message: mensagem,
@@ -344,16 +344,16 @@ export class AdminPerfisAutonomiaPage implements OnInit {
       mensagem = historico
         .map((h) => {
           const data = new Date(h.dta_alteracao).toLocaleString("pt-BR");
-          return `<b>${data}</b> — ${h.nom_usuario_admin}<br>` +
-            `${h.ind_perfil_anterior || "—"} → ${h.ind_perfil_novo || "removido"}<br>` +
-            `R$ ${h.val_margem_anterior ?? "—"} → R$ ${h.val_margem_nova ?? "—"}<br>` +
-            `<i>${h.des_justificativa}</i>`;
+          return `${data} — ${h.nom_usuario_admin}\n` +
+            `${h.ind_perfil_anterior || "—"} → ${h.ind_perfil_novo || "removido"}\n` +
+            `R$ ${h.val_margem_anterior ?? "—"} → R$ ${h.val_margem_nova ?? "—"}\n` +
+            `${h.des_justificativa}`;
         })
-        .join("<hr>");
+        .join("\n" + "—".repeat(30) + "\n");
     }
 
     const alert = await this.alertCtrl.create({
-      cssClass: "custom-alert",
+      cssClass: "custom-alert custom-alert-lista",
       header: `Histórico — ${grupo.des_grupo}`,
       message: mensagem,
       mode: "ios",

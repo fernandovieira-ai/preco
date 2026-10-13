@@ -459,6 +459,19 @@ ion-icon.alert-icon {
   }
 }
 
+// Variante de "custom-alert" para mensagens em lista (ex.: usuários de um
+// grupo, histórico de alterações). O ion-alert do Ionic 7 não renderiza HTML
+// na mensagem por padrão (innerHTMLTemplatesEnabled=false), então essas telas
+// usam texto puro com quebras de linha "\n" — por isso aqui precisa de
+// white-space: pre-line para as quebras aparecerem, e text-align: left
+// porque centralizar uma lista longa fica ilegível.
+::ng-deep ion-alert.custom-alert.custom-alert-lista {
+  .alert-message {
+    text-align: left;
+    white-space: pre-line;
+  }
+}
+
 // Alerta profissional
 .custom-alert-professional {
   --backdrop-opacity: 0.8;
