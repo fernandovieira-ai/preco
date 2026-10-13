@@ -426,6 +426,18 @@ export class HomePage implements OnInit {
     );
     console.log("===== CHAMANDO SERVIÇO =====");
 
+    // Aproveita o clique de "Atualizar dados" para também sincronizar
+    // usuários/grupos do EMSys3 (sp_atualiza_usuario). Antes disso não
+    // havia nenhum gatilho automático: mudar o grupo de um usuário no
+    // EMSys3 nunca refletia no app até alguém rodar a procedure na mão
+    // direto no banco. Roda em paralelo e de forma independente — se
+    // falhar, não deve travar a sincronização de produtos/preços.
+    this.movimento.atualizaUsuarios(schema).subscribe({
+      next: () => console.log("Usuários/grupos sincronizados com o EMSys3"),
+      error: (err) =>
+        console.error("Erro ao sincronizar usuários/grupos:", err),
+    });
+
     this.movimento
       .sincronizaCadastros(schema, codEmpresa, "S", 0, "R")
       .pipe(
